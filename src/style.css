@@ -1,0 +1,14 @@
+:root {
+	--text-h: #08060d;
+
+	--sans: system-ui, "Segoe UI", Roboto, sans-serif;
+	--heading: system-ui, "Segoe UI", Roboto, sans-serif;
+	font: 18px/145% var(--sans);
+}
+
+h1,
+h2 {
+	font-family: var(--heading);
+	font-weight: 500;
+	color: var(--text-h);
+}
