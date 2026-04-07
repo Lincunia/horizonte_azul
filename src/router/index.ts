@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import LoginView from '../views/LoginView.vue';
 import RegisterView from '../views/RegisterView.vue';
+import TableView from '../views/TableView.vue';
 
 const routes = [
 	{
@@ -18,6 +19,11 @@ const routes = [
 		path: '/register',
 		name: 'register',
 		component: RegisterView
+	},
+	{ // REMEMBER TO DELETE THIS SHIT
+		path: '/tableUser',
+		name: 'tableUser',
+		component: TableView
 	}
 ];
 
