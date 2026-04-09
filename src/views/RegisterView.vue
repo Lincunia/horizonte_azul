@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, Teleport } from "vue";
+import { reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from '../lib/supabaseClient.ts';
 
@@ -27,19 +27,41 @@ const registerForm = reactive<RegisterForm>({
 });
 const message = ref<string>("");
 
-async function insertarUsuario(datos: RegisterForm) {
-    const { error } = await supabase.from('usuarios').insert(
+
+async function insertarUsuario(datosUsuario: RegisterForm): Promise<boolean> {
+	const {
+		data: datosUsuarioJSON,
+		error: primerError
+	} = await supabase.auth.signUp({
+		email: datosUsuario.email,
+		password: datosUsuario.password,
+	});
+
+	if(primerError){
+		console.log(primerError);
+		return false;	
+	}
+	
+    const { error: segundoError } = await supabase.from('usuarios').insert(
 		{
-			tipo_identificacion: datos.tipoIdentificacion,
-			numero_identificacion: datos.numeroIdentificacion,
-			nombre: datos.nombre,
-			email: datos.email,
-			telefono: datos.telefono,
-			password_hash: datos.password,
-			rol_usuario: datos.rol
+			tipo_identificacion: datosUsuario.tipoIdentificacion,
+			numero_identificacion: datosUsuario.numeroIdentificacion,
+			nombre: datosUsuario.nombre,
+			email: datosUsuario.email,
+			telefono: datosUsuario.telefono,
+			rol_usuario: datosUsuario.rol,
+			auth_id: datosUsuarioJSON.user?.id
 		}
 	);
-	console.log(error);
+	if(segundoError){
+		if(segundoError.message.includes('duplicate key')){
+			message.value = "El usuario ya existe";
+		}
+		message.value += "\n" + segundoError.message;
+		return false;
+	}
+	
+	return true;
 };
 
 const handleRegister = (): void => {
@@ -67,13 +89,14 @@ const handleRegister = (): void => {
 	}
 
 	// Simulación de registro exitoso
-	message.value = "Registro exitoso";
-	insertarUsuario(registerForm);
-	/*
-	setTimeout(() => {
-		router.push("/login");
-	}, 1500);
-	*/
+	insertarUsuario(registerForm).then(authVerificado => {
+		if(authVerificado){
+			message.value = "Registro exitoso"
+			setTimeout(() => {
+				router.push("/login");
+			}, 1500);
+		}
+	});
 };
 
 const goToLogin = (): void => {
@@ -138,11 +161,7 @@ const goBack = (): void => {
 
 			<div>
 				<label>Confirmar Contraseña:</label>
-				<input
-					type="password"
-					v-model="registerForm.confirmarContrasena"
-					required
-				/>
+				<input type="password" v-model="registerForm.confirmarContrasena" required />
 			</div>
 
 			<div>
