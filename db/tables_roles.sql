@@ -56,7 +56,6 @@ CREATE TABLE usuarios (
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     telefono VARCHAR(20),
-    -- password_hash TEXT NOT NULL, -- Al parecer hay un 
     rol_usuario rol NOT NULL,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ultimo_acceso TIMESTAMP,

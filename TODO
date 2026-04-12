@@ -1,3 +1,9 @@
-1. Cifrar la contraseña (DOING)
+DONE:
+Cifrar contraseña
+Modificar tabla de autenticatión en supabase
+
+TODO:
+Arreglar los errores hechos con la IA
+
+DOING:
 2. ¿Cómo se enlaza la autenticación de Supabase con una tabla de PostgreSQL?
-3. Modificar tabla de autenticatión en supabase
