@@ -13,8 +13,13 @@ para la universidad.
 ### Logo:
 
 <div align="center">
-    <img src="./public/logo.png" width="400"/>
+    <img src="./src/assets/logo.png" width="400"/>
 </div>
 
 ###  Enlaces por estudiar
 * [Configuración del proyecto](https://vuejs.org/guide/typescript/overview.html#project-setup)
+
+### Autores:
+ * Lincunia
+ * Mad
+ * cnajerat-hash

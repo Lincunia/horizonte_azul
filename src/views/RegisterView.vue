@@ -130,72 +130,87 @@ const goToHome = (): void => {
 </script>
 
 <template>
-	<div>
-		<h1>Registro de Usuario</h1>
+  <div class="container">
+    <div class="card">
 
-		<form @submit.prevent="handleRegister">
-			<div>
-				<label>Tipo de identificación:</label>
-				<select v-model="registerForm.idType" required>
-					<option>CC</option>
-					<option>CE</option>
-					<option>Pasaporte</option>
-					<option>Otro</option>
-				</select>
-			</div>
+      <img :src="logo" class="logo"/>
 
-			<div>
-				<label>Número de identificación:</label>
-				<input type="text" v-model="registerForm.idNum" required />
-			</div>
+      <h2>Registro</h2>
 
-			<div>
-				<label>Nombre:</label>
-				<input type="text" v-model="registerForm.name" required />
-			</div>
+      <form @submit.prevent="handleRegister">
 
-			<div>
-				<label>Email:</label>
-				<input type="email" v-model="registerForm.email" required />
-			</div>
+        <div class="input-group">
+          <label>Tipo de identificación</label>
+          <select v-model="registerForm.tipoIdentificacion" required>
+            <option>CC</option>
+            <option>CE</option>
+            <option>Pasaporte</option>
+            <option>Otro</option>
+          </select>
+        </div>
 
-			<div>
-				<label>Teléfono:</label>
-				<input type="tel" v-model="registerForm.phone" required />
-			</div>
+        <div class="input-group">
+          <label>Número de identificación</label>
+          <input type="text" v-model="registerForm.numeroIdentificacion" required />
+        </div>
 
-			<div>
-				<label>Roles de usuario:</label>
-				<select v-model="registerForm.role" required>
-					<option>Huesped</option>
-					<option>Recepcionista</option>
-					<option>Administrador</option>
-				</select>
-			</div>
+        <div class="input-group">
+          <label>Nombre</label>
+          <input type="text" v-model="registerForm.nombre" required />
+        </div>
 
-			<div>
-				<label>Contraseña:</label>
-				<input type="password" v-model="registerForm.password" required />
-			</div>
+        <div class="input-group">
+          <label>Email</label>
+          <input type="email" v-model="registerForm.email" required />
+        </div>
 
-			<div>
-				<label>Confirmar Contraseña:</label>
-				<input
-					type="password"
-					v-model="registerForm.confirmPassword"
-					required
-				/>
-			</div>
+        <div class="input-group">
+          <label>Teléfono</label>
+          <input type="tel" v-model="registerForm.telefono" required />
+        </div>
 
-			<div>
-				<button type="submit" :disabled="loading">Registrarse</button>
-				<button type="button" @click="goToLogin">
-					¿Ya tienes cuenta? Inicia Sesión
-				</button>
-				<button type="button" @click="goToHome">Volver al inicio</button>
-			</div>
-		</form>
+        <div class="input-group">
+          <label>Rol</label>
+          <select v-model="registerForm.rol" required>
+            <option>Huesped</option>
+            <option>Recepcionista</option>
+            <option>Administrador</option>
+          </select>
+        </div>
 
-		<p v-if="message">{{ message }}</p>
-	</div>
+        <div class="input-group">
+          <label>Contraseña</label>
+          <input type="password" v-model="registerForm.password" required />
+        </div>
+
+        <div class="input-group">
+          <label>Confirmar Contraseña</label>
+          <input type="password" v-model="registerForm.confirmarContrasena" required />
+        </div>
+
+        <button type="submit" class="btn">
+          Registrarse
+        </button>
+
+        <p class="link" @click="goToLogin" style="cursor:pointer;">
+          ¿Ya tienes cuenta? Inicia sesión
+        </p>
+
+        <button 
+          type="button" 
+          class="btn" 
+          style="margin-top:10px; background: gray;"
+          @click="goToHome"
+        >
+          Volver
+        </button>
+
+      </form>
+
+      <div v-if="message" style="margin-top:10px;">
+        <p>{{ message }}</p>
+      </div>
+
+    </div>
+  </div>
 </template>

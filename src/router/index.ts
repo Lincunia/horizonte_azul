@@ -4,6 +4,7 @@ import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import RegisterView from "../views/RegisterView.vue";
 import AdminDashboard from "../views/AdminDashboard.vue";
+import ReceptionDashboard from "../views/ReceptionDashboard.vue";
 
 const routes = [
 	{
@@ -22,6 +23,11 @@ const routes = [
 		component: RegisterView,
 	},
 	{
+		path: "/reception/dashboard",
+		name: "RecepcionDashboard",
+		component: ReceptionDashboard,
+	},
+		{
 		path: "/admin/dashboard",
 		name: "AdminDashboard",
 		component: AdminDashboard,

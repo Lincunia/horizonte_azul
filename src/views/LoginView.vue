@@ -102,45 +102,34 @@ const goToHome = (): void => {
 </script>
 
 <template>
-	<div>
-		<h1>Inicio de Sesión</h1>
-
-		<form @submit.prevent="handleLogin">
-			<div>
-				<label>Email:</label>
-				<input
-					type="email"
-					v-model="loginForm.email"
-					required
-					placeholder="usuario@ejemplo.com"
-				/>
-			</div>
-
-			<div>
-				<label>Contraseña:</label>
-				<input
-					type="password"
-					v-model="loginForm.password"
-					required
-					placeholder="123456Seven"
-				/>
-			</div>
-
-			<div>
-				<button type="submit" :disabled="loading">
+	<div class="container">
+		<div class="card">
+			<img :src="logo" class="logo" />
+			<h2>Iniciar Sesión</h2>
+			<form @submit.prevent="handleLogin">
+				<div class="input-group">
+					<label>Email</label>
+					<input type="email" v-model="loginForm.email" required />
+				</div>
+				<div class="input-group">
+					<label>Contraseña</label>
+					<input type="password" v-model="loginForm.password" required />
+				</div>
+				<button type="submit" class="btn" :disabled="loading">
 					{{ loading ? "Iniciando sesión..." : "Iniciar Sesión" }}
 				</button>
-				<button type="button" @click="goToRegister" :disabled="loading">
+
+				<p class="link" @click="goToRegister" :disabled="loading">
 					¿No tienes cuenta? Regístrate
-				</button>
-				<button type="button" @click="goToHome" :disabled="loading">
+				</p>
+				<button type="button" class="btn" @click="goToHome" :disabled="loading">
 					Volver al inicio
 				</button>
-			</div>
-		</form>
+			</form>
 
-		<div v-if="message">
-			<p>{{ message }}</p>
+			<div v-if="message">
+				<p>{{ message }}</p>
+			</div>
 		</div>
 	</div>
 </template>

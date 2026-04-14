@@ -322,15 +322,13 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="dashboard">
+	<div>
 		<!-- Header -->
-		<div class="header">
+		<div>
 			<h1>Panel de Administración</h1>
-			<div class="header-buttons">
-				<button @click="goToHome" class="btn-home">🏠 Inicio</button>
-				<button @click="handleLogout" class="btn-logout">
-					🚪 Cerrar Sesión
-				</button>
+			<div>
+				<button @click="goToHome">🏠 Inicio</button>
+				<button @click="handleLogout">🚪 Cerrar Sesión</button>
 			</div>
 		</div>
 
@@ -340,48 +338,44 @@ onMounted(() => {
 		</div>
 
 		<!-- Estadísticas -->
-		<div class="stats-grid">
-			<div class="stat-card">
+		<div>
+			<div>
 				<h3>Total Usuarios</h3>
-				<p class="stat-number">{{ estadisticas.totalUsuarios }}</p>
+				<p>{{ estadisticas.totalUsuarios }}</p>
 			</div>
-			<div class="stat-card">
+			<div>
 				<h3>Usuarios Activos</h3>
-				<p class="stat-number">{{ estadisticas.usuariosActivos }}</p>
+				<p>{{ estadisticas.usuariosActivos }}</p>
 			</div>
-			<div class="stat-card">
+			<div>
 				<h3>Huéspedes</h3>
-				<p class="stat-number">{{ estadisticas.huespedes }}</p>
+				<p>{{ estadisticas.huespedes }}</p>
 			</div>
-			<div class="stat-card">
+			<div>
 				<h3>Recepcionistas</h3>
-				<p class="stat-number">{{ estadisticas.recepcionistas }}</p>
+				<p>{{ estadisticas.recepcionistas }}</p>
 			</div>
-			<div class="stat-card">
+			<div>
 				<h3>Administradores</h3>
-				<p class="stat-number">{{ estadisticas.administradores }}</p>
+				<p>{{ estadisticas.administradores }}</p>
 			</div>
-			<div class="stat-card">
+			<div>
 				<h3>Registros Hoy</h3>
-				<p class="stat-number">{{ estadisticas.registrosHoy }}</p>
+				<p>{{ estadisticas.registrosHoy }}</p>
 			</div>
 		</div>
 
 		<!-- Controles -->
-		<div class="controls">
-			<button @click="openCreateModal" class="btn-create">
-				➕ Crear Usuario
-			</button>
+		<div>
+			<button @click="openCreateModal">➕ Crear Usuario</button>
 
-			<div class="filters">
+			<div>
 				<input
 					type="text"
 					v-model="searchTerm"
 					placeholder="🔍 Buscar usuario..."
-					class="search-input"
 				/>
-
-				<select v-model="filterRol" class="filter-select">
+				<select v-model="filterRol">
 					<option value="todos">Todos los roles</option>
 					<option value="Huesped">Huéspedes</option>
 					<option value="Recepcionista">Recepcionistas</option>
@@ -391,8 +385,8 @@ onMounted(() => {
 		</div>
 
 		<!-- Tabla de usuarios -->
-		<div class="table-container">
-			<div v-if="loading" class="loading">Cargando usuarios...</div>
+		<div>
+			<div v-if="loading">Cargando usuarios...</div>
 
 			<table v-else class="users-table">
 				<thead>
@@ -432,51 +426,35 @@ onMounted(() => {
 						</td>
 						<td>{{ formatDate(user.fecha_registro) }}</td>
 						<td>{{ formatDate(user.ultimo_acceso) }}</td>
-						<td class="actions">
-							<button
-								@click="openEditModal(user)"
-								class="btn-edit"
-								title="Editar"
-							>
-								✏️
-							</button>
+						<td>
+							<button @click="openEditModal(user)" title="Editar">✏️</button>
 							<button
 								@click="toggleUserStatus(user)"
-								class="btn-toggle"
 								:title="user.activo ? 'Desactivar' : 'Activar'"
 							>
 								{{ user.activo ? "🔴" : "🟢" }}
 							</button>
-							<button
-								@click="deleteUser(user)"
-								class="btn-delete"
-								title="Eliminar"
-							>
-								🗑️
-							</button>
+							<button @click="deleteUser(user)" title="Eliminar">🗑️</button>
 						</td>
 					</tr>
 					<tr v-if="filteredUsers.length === 0">
-						<td colspan="10" class="no-data">No hay usuarios para mostrar</td>
+						<td colspan="10">No hay usuarios para mostrar</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
 
 		<!-- Modal para crear/editar usuario -->
-		<div v-if="showModal" class="modal" @click.self="closeModal">
-			<div class="modal-content">
-				<div class="modal-header">
+		<div v-if="showModal" @click.self="closeModal">
+			<div>
+				<div>
 					<h2>{{ editingUser ? "Editar Usuario" : "Crear Nuevo Usuario" }}</h2>
-					<button @click="closeModal" class="close-btn">&times;</button>
+					<button @click="closeModal">&times;</button>
 				</div>
 
-				<form
-					@submit.prevent="editingUser ? updateUser() : createUser()"
-					class="modal-form"
-				>
-					<div class="form-row">
-						<div class="form-group">
+				<form @submit.prevent="editingUser ? updateUser() : createUser()">
+					<div>
+						<div>
 							<label>Tipo Identificación *</label>
 							<select v-model="userForm.tipo_identificacion" required>
 								<option>CC</option>
@@ -486,7 +464,7 @@ onMounted(() => {
 							</select>
 						</div>
 
-						<div class="form-group">
+						<div>
 							<label>Número Identificación *</label>
 							<input
 								type="text"
@@ -496,23 +474,23 @@ onMounted(() => {
 						</div>
 					</div>
 
-					<div class="form-group">
+					<div>
 						<label>Nombre Completo *</label>
 						<input type="text" v-model="userForm.nombre" required />
 					</div>
 
-					<div class="form-group" v-if="!editingUser">
+					<div>
 						<label>Email *</label>
 						<input type="email" v-model="userForm.email" required />
 					</div>
 
-					<div class="form-row">
-						<div class="form-group">
+					<div>
+						<div>
 							<label>Teléfono</label>
 							<input type="tel" v-model="userForm.telefono" />
 						</div>
 
-						<div class="form-group">
+						<div>
 							<label>Rol *</label>
 							<select v-model="userForm.rol_usuario" required>
 								<option>Huesped</option>
@@ -522,13 +500,13 @@ onMounted(() => {
 						</div>
 					</div>
 
-					<div v-if="!editingUser" class="form-row">
-						<div class="form-group">
+					<div v-if="!editingUser">
+						<div>
 							<label>Contraseña *</label>
 							<input type="password" v-model="userForm.password" required />
 						</div>
 
-						<div class="form-group">
+						<div>
 							<label>Confirmar Contraseña *</label>
 							<input
 								type="password"
@@ -538,366 +516,14 @@ onMounted(() => {
 						</div>
 					</div>
 
-					<div class="modal-buttons">
-						<button type="submit" class="btn-save">
+					<div>
+						<button type="submit">
 							{{ editingUser ? "Actualizar" : "Crear" }}
 						</button>
-						<button type="button" @click="closeModal" class="btn-cancel">
-							Cancelar
-						</button>
+						<button type="button" @click="closeModal">Cancelar</button>
 					</div>
 				</form>
 			</div>
 		</div>
 	</div>
 </template>
-
-<style scoped>
-.dashboard {
-	padding: 2rem;
-	max-width: 1400px;
-	margin: 0 auto;
-}
-
-.header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 2rem;
-	padding-bottom: 1rem;
-	border-bottom: 2px solid #e0e0e0;
-}
-
-.header h1 {
-	margin: 0;
-	color: #333;
-}
-
-.header-buttons {
-	display: flex;
-	gap: 1rem;
-}
-
-.btn-home,
-.btn-logout {
-	padding: 0.5rem 1rem;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 1rem;
-}
-
-.btn-home {
-	background-color: #2196f3;
-	color: white;
-}
-
-.btn-logout {
-	background-color: #f44336;
-	color: white;
-}
-
-.message {
-	padding: 1rem;
-	border-radius: 4px;
-	margin-bottom: 1rem;
-	text-align: center;
-}
-
-.message.success {
-	background-color: #d4edda;
-	color: #155724;
-	border: 1px solid #c3e6cb;
-}
-
-.message.error {
-	background-color: #f8d7da;
-	color: #721c24;
-	border: 1px solid #f5c6cb;
-}
-
-.stats-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 1rem;
-	margin-bottom: 2rem;
-}
-
-.stat-card {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	color: white;
-	padding: 1.5rem;
-	border-radius: 8px;
-	text-align: center;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card h3 {
-	margin: 0 0 0.5rem 0;
-	font-size: 0.9rem;
-	opacity: 0.9;
-}
-
-.stat-number {
-	font-size: 2rem;
-	font-weight: bold;
-	margin: 0;
-}
-
-.controls {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 1.5rem;
-	gap: 1rem;
-}
-
-.btn-create {
-	background-color: #4caf50;
-	color: white;
-	padding: 0.5rem 1rem;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-}
-
-.filters {
-	display: flex;
-	gap: 1rem;
-	flex: 1;
-	max-width: 400px;
-}
-
-.search-input {
-	flex: 1;
-	padding: 0.5rem;
-	border: 1px solid #ddd;
-	border-radius: 4px;
-}
-
-.filter-select {
-	padding: 0.5rem;
-	border: 1px solid #ddd;
-	border-radius: 4px;
-}
-
-.table-container {
-	overflow-x: auto;
-	background: white;
-	border-radius: 8px;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.users-table {
-	width: 100%;
-	border-collapse: collapse;
-}
-
-.users-table th,
-.users-table td {
-	padding: 1rem;
-	text-align: left;
-	border-bottom: 1px solid #e0e0e0;
-}
-
-.users-table th {
-	background-color: #f5f5f5;
-	font-weight: 600;
-	color: #333;
-}
-
-.users-table tr:hover {
-	background-color: #f9f9f9;
-}
-
-.role-badge {
-	padding: 0.25rem 0.5rem;
-	border-radius: 4px;
-	font-size: 0.85rem;
-	font-weight: 500;
-}
-
-.role-badge.huesped {
-	background-color: #e3f2fd;
-	color: #1976d2;
-}
-
-.role-badge.recepcionista {
-	background-color: #f3e5f5;
-	color: #7b1fa2;
-}
-
-.role-badge.administrador {
-	background-color: #ffebee;
-	color: #c62828;
-}
-
-.status-badge {
-	padding: 0.25rem 0.5rem;
-	border-radius: 4px;
-	font-size: 0.85rem;
-}
-
-.status-badge.active {
-	background-color: #d4edda;
-	color: #155724;
-}
-
-.status-badge.inactive {
-	background-color: #f8d7da;
-	color: #721c24;
-}
-
-.actions {
-	display: flex;
-	gap: 0.5rem;
-}
-
-.actions button {
-	padding: 0.25rem 0.5rem;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 1rem;
-}
-
-.btn-edit {
-	background-color: #ffc107;
-	color: #333;
-}
-
-.btn-toggle {
-	background-color: #17a2b8;
-	color: white;
-}
-
-.btn-delete {
-	background-color: #dc3545;
-	color: white;
-}
-
-.loading,
-.no-data {
-	text-align: center;
-	padding: 2rem;
-	color: #666;
-}
-
-/* Modal styles */
-.modal {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0, 0, 0, 0.5);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	z-index: 1000;
-}
-
-.modal-content {
-	background: white;
-	border-radius: 8px;
-	width: 90%;
-	max-width: 600px;
-	max-height: 90vh;
-	overflow-y: auto;
-}
-
-.modal-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 1rem;
-	border-bottom: 1px solid #e0e0e0;
-}
-
-.modal-header h2 {
-	margin: 0;
-}
-
-.close-btn {
-	background: none;
-	border: none;
-	font-size: 1.5rem;
-	cursor: pointer;
-	color: #666;
-}
-
-.modal-form {
-	padding: 1rem;
-}
-
-.form-row {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 1rem;
-}
-
-.form-group {
-	margin-bottom: 1rem;
-}
-
-.form-group label {
-	display: block;
-	margin-bottom: 0.25rem;
-	font-weight: 500;
-}
-
-.form-group input,
-.form-group select {
-	width: 100%;
-	padding: 0.5rem;
-	border: 1px solid #ddd;
-	border-radius: 4px;
-}
-
-.modal-buttons {
-	display: flex;
-	gap: 1rem;
-	margin-top: 1rem;
-}
-
-.btn-save {
-	background-color: #4caf50;
-	color: white;
-	padding: 0.5rem 1rem;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-}
-
-.btn-cancel {
-	background-color: #6c757d;
-	color: white;
-	padding: 0.5rem 1rem;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-}
-
-@media (max-width: 768px) {
-	.dashboard {
-		padding: 1rem;
-	}
-
-	.controls {
-		flex-direction: column;
-	}
-
-	.filters {
-		max-width: 100%;
-		width: 100%;
-	}
-
-	.form-row {
-		grid-template-columns: 1fr;
-	}
-
-	.stats-grid {
-		grid-template-columns: repeat(2, 1fr);
-	}
-}
-</style>

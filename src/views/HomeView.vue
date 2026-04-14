@@ -1,28 +1,43 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
+import logo from "../assets/logo.png";
 
 const router = useRouter();
 
-const goToLogin = (): void => {
+const goToLogin = () => {
 	router.push("/login");
 };
 
-const goToRegister = (): void => {
+const goToRegister = () => {
 	router.push("/register");
 };
 </script>
 
 <template>
 	<div>
-		<h1>Hotel Horizonte Azul</h1>
-		<p>
-			Haremos el esfuerzo para poder mostrar estilo en la aplicación, pero de
-			momento, esto es lo que se puede ver dentro
-		</p>
+		<div class="navbar">
+			<img :src="logo" />
+			<span>Hotel Horizonte Azul</span>
+		</div>
 
-		<div>
-			<button @click="goToLogin">Iniciar Sesión</button>
-			<button @click="goToRegister">Registrarse</button>
+		<div class="hero">
+			<div class="hero-content">
+				<h1>
+					Bienvenido, regístrate y acércate
+					<span class="resaltado">más a tus vacaciones ideales </span>
+				</h1>
+
+				<button class="btn" @click="goToLogin">Iniciar Sesión</button>
+
+				<button
+					class="btn"
+					style="margin-top: 10px; background: var(--naranja)"
+					@click="goToRegister"
+				>
+					Registrarse
+				</button>
+			</div>
 		</div>
 	</div>
 </template>
+
