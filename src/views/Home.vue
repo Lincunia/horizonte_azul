@@ -16,7 +16,7 @@ const goToRegister = () => {
 <template>
 	<div>
 		<div class="navbar">
-			<img :src="logo" />
+			<img v-if="logo" :src="logo" class="logo" alt="Logo" />
 			<span>Hotel Horizonte Azul</span>
 		</div>
 

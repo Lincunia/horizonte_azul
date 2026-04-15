@@ -2,6 +2,8 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
+import { useToast } from "../composables/useToast.ts";
+import ToastMessage from "../components/ToastMessage.vue";
 
 const router = useRouter();
 
@@ -27,8 +29,6 @@ const registerForm = ref<RegisterForm>({
 	confirmPassword: "",
 });
 
-const message = ref<string>("");
-
 const loading = ref(false);
 
 onMounted(async () => {
@@ -43,9 +43,10 @@ onMounted(async () => {
 		});
 		if (error) {
 			console.error("Error al confirmar correo:", error);
-			message.value = "Error al verificar tu cuenta. Intenta iniciar sesión.";
+
+			useToast().showMessage("error", "Error al verificar tu cuenta. Intenta iniciar sesión.");
 		} else {
-			message.value = "¡Correo verificado! Ya puedes iniciar sesión.";
+			useToast().showMessage("success", "¡Correo verificado! Ya puedes iniciar sesión.");
 			// Limpiar la URL (eliminar el hash)
 			window.location.hash = "";
 			// Redirigir al login después de 2 segundos
@@ -105,15 +106,16 @@ const handleRegister = async (): Promise<void> => {
 			throw new Error("La contraseña debe tener al menos 6 caracteres");
 		}
 		await insertUser(registerForm.value);
-		message.value = "Registro exitoso, verifique su correo";
+		useToast().showMessage("success", "Registro exitoso, verifique su correo");
 	} catch (error: any) {
 		console.error(error);
 		if (error.message.includes("already registered")) {
-			message.value = "Este correo electrónico ya está registrado.";
+
+			useToast().showMessage("error", "Este correo electrónico ya está registrado.");
 		} else if (error.code === "23505") {
-			message.value = "Ya existe un usuario con esos datos.";
+			useToast().showMessage("error", "Ya existe un usuario con esos datos.");
 		} else {
-			message.value = error.message || "Ocurrió un error durante el registro";
+			useToast().showMessage("error", error.message || "Ocurrió un error durante el registro");
 		}
 	} finally {
 		loading.value = false;
@@ -130,87 +132,86 @@ const goToHome = (): void => {
 </script>
 
 <template>
-  <div class="container">
-    <div class="card">
+	<div class="container">
+		<div class="card">
+			<img v-if="logo" :src="logo" class="logo" alt="Logo" />
 
-      <img :src="logo" class="logo"/>
+			<h2>Registro</h2>
 
-      <h2>Registro</h2>
+			<form @submit.prevent="handleRegister">
+				<div class="input-group">
+					<label>Tipo de identificación</label>
+					<select v-model="registerForm.tipoIdentificacion" required>
+						<option>CC</option>
+						<option>CE</option>
+						<option>Pasaporte</option>
+						<option>Otro</option>
+					</select>
+				</div>
 
-      <form @submit.prevent="handleRegister">
+				<div class="input-group">
+					<label>Número de identificación</label>
+					<input
+						type="text"
+						v-model="registerForm.numeroIdentificacion"
+						required
+					/>
+				</div>
 
-        <div class="input-group">
-          <label>Tipo de identificación</label>
-          <select v-model="registerForm.tipoIdentificacion" required>
-            <option>CC</option>
-            <option>CE</option>
-            <option>Pasaporte</option>
-            <option>Otro</option>
-          </select>
-        </div>
+				<div class="input-group">
+					<label>Nombre</label>
+					<input type="text" v-model="registerForm.nombre" required />
+				</div>
 
-        <div class="input-group">
-          <label>Número de identificación</label>
-          <input type="text" v-model="registerForm.numeroIdentificacion" required />
-        </div>
+				<div class="input-group">
+					<label>Email</label>
+					<input type="email" v-model="registerForm.email" required />
+				</div>
 
-        <div class="input-group">
-          <label>Nombre</label>
-          <input type="text" v-model="registerForm.nombre" required />
-        </div>
+				<div class="input-group">
+					<label>Teléfono</label>
+					<input type="tel" v-model="registerForm.telefono" required />
+				</div>
 
-        <div class="input-group">
-          <label>Email</label>
-          <input type="email" v-model="registerForm.email" required />
-        </div>
+				<div class="input-group">
+					<label>Rol</label>
+					<select v-model="registerForm.rol" required>
+						<option>Huesped</option>
+						<option>Recepcionista</option>
+						<option>Administrador</option>
+					</select>
+				</div>
 
-        <div class="input-group">
-          <label>Teléfono</label>
-          <input type="tel" v-model="registerForm.telefono" required />
-        </div>
+				<div class="input-group">
+					<label>Contraseña</label>
+					<input type="password" v-model="registerForm.password" required />
+				</div>
 
-        <div class="input-group">
-          <label>Rol</label>
-          <select v-model="registerForm.rol" required>
-            <option>Huesped</option>
-            <option>Recepcionista</option>
-            <option>Administrador</option>
-          </select>
-        </div>
+				<div class="input-group">
+					<label>Confirmar Contraseña</label>
+					<input
+						type="password"
+						v-model="registerForm.confirmarContrasena"
+						required
+					/>
+				</div>
 
-        <div class="input-group">
-          <label>Contraseña</label>
-          <input type="password" v-model="registerForm.password" required />
-        </div>
+				<button type="submit" class="btn">Registrarse</button>
 
-        <div class="input-group">
-          <label>Confirmar Contraseña</label>
-          <input type="password" v-model="registerForm.confirmarContrasena" required />
-        </div>
+				<p class="link" @click="goToLogin" style="cursor: pointer">
+					¿Ya tienes cuenta? Inicia sesión
+				</p>
 
-        <button type="submit" class="btn">
-          Registrarse
-        </button>
-
-        <p class="link" @click="goToLogin" style="cursor:pointer;">
-          ¿Ya tienes cuenta? Inicia sesión
-        </p>
-
-        <button 
-          type="button" 
-          class="btn" 
-          style="margin-top:10px; background: gray;"
-          @click="goToHome"
-        >
-          Volver
-        </button>
-
-      </form>
-
-      <div v-if="message" style="margin-top:10px;">
-        <p>{{ message }}</p>
-      </div>
-
-    </div>
-  </div>
+				<button
+					type="button"
+					class="btn"
+					style="margin-top: 10px; background: gray"
+					@click="goToHome"
+				>
+					Volver
+				</button>
+			</form>
+			<ToastMessage />
+		</div>
+	</div>
 </template>

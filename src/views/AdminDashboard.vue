@@ -324,7 +324,7 @@ onMounted(() => {
 <template>
 	<div>
 		<!-- Header -->
-		<div>
+		<div class="navbar">
 			<h1>Panel de Administración</h1>
 			<div>
 				<button @click="goToHome">🏠 Inicio</button>
