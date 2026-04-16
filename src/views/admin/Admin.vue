@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import ToastMessage from "../../components/ToastMessage.vue";
 
+
 const router = useRouter();
 
 // Interfaces
@@ -30,9 +31,19 @@ interface Estadisticas {
 	administradores: number;
 	registrosHoy: number;
 }
-
+interface Reserva {
+	id_reserva: number;
+	auth_id_usuario: string;
+	id_habitacion: number;
+	fecha_reserva: string;
+	fecha_inicio: string;
+	fecha_fin: string;
+	estado: "Pendiente" | "Confirmada" | "Cancelada";
+	observaciones: String;
+}
 // Estado
 const users = ref<User[]>([]);
+const reservas = ref<Reserva[]>([]);
 const loading = ref(true);
 const showModal = ref(false);
 const editingUser = ref<User | null>(null);
@@ -83,7 +94,22 @@ const filteredUsers = computed(() => {
 });
 
 // Funciones
+const loadReservas = async () => {
+	try {
+		const { data, error } = await supabase
+			.from("reservas")
+			.select("*")
+			.order("fecha_inicio", { ascending: false });
 
+		if (error) throw error;
+		reservas.value = data || [];
+		console.log("Reservas cargadas:", data);
+		// Aquí podrías hacer algo con las reservas si las necesitas
+	} catch (error: any) {
+		console.error("Error al cargar reservas:", error);
+		useToast().showMessage("error", "Error al cargar las reservas");
+	}
+};
 const loadUsers = async () => {
 	try {
 		loading.value = true;
@@ -170,6 +196,7 @@ const createUser = async () => {
 		useToast().showMessage("success", "Usuario creado exitosamente");
 		closeModal();
 		await loadUsers();
+		await loadReservas();
 	} catch (error: any) {
 		console.error("Error al crear usuario:", error);
 		useToast().showMessage(
@@ -234,7 +261,11 @@ const deleteUser = async (user: User) => {
 		);
 	}
 };
-
+const toggleTable = async() => {
+      showReservas.value = !showReservas.value;
+	  await loadReservas();
+    };
+const showReservas = ref(false);
 const toggleUserStatus = async (user: User) => {
 	try {
 		const { error } = await supabase
@@ -374,7 +405,9 @@ onMounted(() => {
 		<!-- Controles -->
 		<div>
 			<button class="btn" @click="openCreateModal">➕ Crear Usuario</button>
-
+			<button @click="toggleTable">
+				{{ showReservas ? "Mostrar Usuarios" : "Mostrar Reservas" }}
+			</button>
 			<div>
 				<input
 					type="text"
@@ -391,7 +424,7 @@ onMounted(() => {
 		</div>
 
 		<!-- Tabla de usuarios -->
-		<div>
+		<div v-if="!showReservas">
 			<div v-if="loading">Cargando usuarios...</div>
 
 			<table v-else class="users-table">
@@ -458,7 +491,33 @@ onMounted(() => {
 				</tbody>
 			</table>
 		</div>
-
+		<div v-else>
+      <h1>Reservas</h1>
+      <table border="1">
+        <thead>
+          <tr>
+            <th>id_reserva</th>
+            <th>fecha_reserva</th>
+            <th>fecha_inicio</th>
+            <th>fecha_fin</th>
+            <th>estado</th>
+            <th>id_usuario</th>
+            <th>id_habitacion</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="reserva in reservas" :key="reserva.id_reserva">
+            <td>{{ reserva.id_reserva }}</td>
+            <td>{{ reserva.fecha_reserva }}</td>
+            <td>{{ reserva.fecha_inicio }}</td>
+            <td>{{ reserva.fecha_fin }}</td>
+            <td>{{ reserva.estado }}</td>
+            <td>{{ reserva.auth_id_usuario }}</td>
+            <td>{{ reserva.id_habitacion }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 		<!-- Modal para crear/editar usuario -->
 		<div v-if="showModal" @click.self="closeModal">
 			<div>
@@ -544,3 +603,4 @@ onMounted(() => {
 		</div>
 	</div>
 </template>
+
