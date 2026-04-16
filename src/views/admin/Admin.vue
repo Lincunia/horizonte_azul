@@ -39,6 +39,7 @@ interface Reserva {
 	fecha_inicio: string;
 	fecha_fin: string;
 	estado: "Pendiente" | "Confirmada" | "Cancelada";
+	costo_total: number;
 	observaciones: String;
 }
 // Estado
@@ -152,6 +153,25 @@ const loadEstadisticas = async () => {
 		).length;
 	} catch (error) {
 		console.error("Error al calcular estadísticas:", error);
+	}
+};
+const creareReserva = async () => {
+	try {
+		const { data, error } = await supabase.from("reservas").insert({
+			auth_id_usuario: "some-auth-id",
+			id_habitacion: 1,
+			fecha_reserva: new Date().toISOString(),
+			fecha_inicio: new Date().toISOString(),
+			fecha_fin: new Date().toISOString(),
+			estado: "Pendiente",
+			observaciones: "Reserva de prueba",
+		});
+
+		if (error) throw error;
+
+		console.log("Reserva creada:", data);
+	} catch (error) {
+		console.error("Error al crear reserva:", error);
 	}
 };
 
@@ -405,7 +425,7 @@ onMounted(() => {
 		<!-- Controles -->
 		<div>
 			<button class="btn" @click="openCreateModal">➕ Crear Usuario</button>
-			<button @click="toggleTable">
+			<button class="btn" @click="toggleTable">
 				{{ showReservas ? "Mostrar Usuarios" : "Mostrar Reservas" }}
 			</button>
 			<div>
@@ -425,8 +445,9 @@ onMounted(() => {
 
 		<!-- Tabla de usuarios -->
 		<div v-if="!showReservas">
+			<h2>Usuarios</h2>
 			<div v-if="loading">Cargando usuarios...</div>
-
+			
 			<table v-else class="users-table">
 				<thead>
 					<tr>
@@ -492,32 +513,34 @@ onMounted(() => {
 			</table>
 		</div>
 		<div v-else>
-      <h1>Reservas</h1>
-      <table border="1">
-        <thead>
-          <tr>
-            <th>id_reserva</th>
-            <th>fecha_reserva</th>
-            <th>fecha_inicio</th>
-            <th>fecha_fin</th>
-            <th>estado</th>
-            <th>id_usuario</th>
-            <th>id_habitacion</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="reserva in reservas" :key="reserva.id_reserva">
-            <td>{{ reserva.id_reserva }}</td>
-            <td>{{ reserva.fecha_reserva }}</td>
-            <td>{{ reserva.fecha_inicio }}</td>
-            <td>{{ reserva.fecha_fin }}</td>
-            <td>{{ reserva.estado }}</td>
-            <td>{{ reserva.auth_id_usuario }}</td>
-            <td>{{ reserva.id_habitacion }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+			<h2>Reservas</h2>
+			<table class="users-table">
+				<thead>
+				<tr>
+					<th>id_reserva</th>
+					<th>id_usuario</th>
+					<th>id_habitacion</th>
+					<th>fecha_reserva</th>
+					<th>fecha_inicio</th>
+					<th>fecha_fin</th>
+					<th>estado</th>
+					<th>coste total</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr v-for="reserva in reservas" :key="reserva.id_reserva">
+					<td>{{ reserva.id_reserva }}</td>
+					<td>{{ reserva.auth_id_usuario }}</td>
+					<td>{{ reserva.id_habitacion }}</td>
+					<td>{{ reserva.fecha_reserva }}</td>
+					<td>{{ reserva.fecha_inicio }}</td>
+					<td>{{ reserva.fecha_fin }}</td>
+					<td>{{ reserva.estado }}</td>
+					<td>${{ reserva.costo_total }}</td>
+				</tr>
+				</tbody>
+			</table>
+			</div>
 		<!-- Modal para crear/editar usuario -->
 		<div v-if="showModal" @click.self="closeModal">
 			<div>
