@@ -22,7 +22,6 @@ const loading = ref(false);
 
 const handleLogin = async (): Promise<void> => {
 	loading.value = true;
-	message.value = "";
 
 	try {
 		const { data, error } = await supabase.auth.signInWithPassword({
@@ -46,7 +45,6 @@ const handleLogin = async (): Promise<void> => {
 			throw new Error("Error al iniciar sesión");
 		}
 
-		// Actualizar último acceso (opcional, no crítico)
 		const { error: updateError } = await supabase
 			.from("usuarios")
 			.update({
@@ -56,10 +54,8 @@ const handleLogin = async (): Promise<void> => {
 
 		if (updateError) {
 			console.error("Error al actualizar último acceso:", updateError);
-			// No interrumpimos el flujo
 		}
 
-		// Obtener el rol del usuario
 		const { data: userData, error: userError } = await supabase
 			.from("usuarios")
 			.select("rol_usuario")
@@ -76,6 +72,7 @@ const handleLogin = async (): Promise<void> => {
 			return;
 		}
 
+
 		// Mostrar mensaje de éxito y redirigir según el rol
 		useToast().showMessage(
 			"success",
@@ -88,15 +85,16 @@ const handleLogin = async (): Promise<void> => {
 					router.push("/admin/dashboard");
 					break;
 				case "Recepcionista":
-					router.push("/reception/dashboard"); // Corregido: reception en lugar de recepcion
+					router.push("/reception/dashboard");
 					break;
 				case "Huesped":
-					router.push("/guest/dashboard"); // Corregido: usando la ruta correcta
+					router.push("/guest/dashboard");
 					break;
 				default:
 					router.push("/");
 					break;
 			}
+			loading.value = false;
 		}, 1500);
 	} catch (error: any) {
 		console.error("Error en login:", error);
@@ -105,7 +103,6 @@ const handleLogin = async (): Promise<void> => {
 			"error",
 			error.message || "Ocurrió un error durante el inicio de sesión",
 		);
-	} finally {
 		loading.value = false;
 	}
 };
@@ -156,7 +153,7 @@ const goToHome = (): void => {
 					@click="goToHome"
 					:disabled="loading"
 				>
-					Volver al inicio
+					Volver
 				</button>
 				<p class="link" @click="goToRegister">¿No tienes cuenta? Regístrate</p>
 			</form>

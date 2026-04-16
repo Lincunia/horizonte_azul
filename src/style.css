@@ -109,6 +109,13 @@ input:focus {
 	font-size: 1rem;
 }
 
+.btn-secondary {
+	background: gray;
+}
+.btn-critical {
+	background: var(--rojo);
+}
+
 .btn:hover {
 	opacity: 0.9;
 }
@@ -157,7 +164,7 @@ input:focus {
 	min-height: 100vh;
 	background:
 		linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-		url("https://images.unsplash.com/photo-1566073771259-6a8506099945");
+		url("./assets/hero.jpg");
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;

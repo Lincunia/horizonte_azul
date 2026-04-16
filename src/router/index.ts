@@ -1,67 +1,83 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
-import Home from "../views/Home.vue";
-import Login from "../views/Login.vue";
-import Register from "../views/Register.vue";
-import AdminDashboard from "../views/AdminDashboard.vue";
-import ReceptionDashboard from "../views/ReceptionDashboard.vue";
-import GuestDashboard from "../views/GuestDashboard.vue";
 
 const routes = [
 	{
 		path: "/",
 		name: "home",
-		component: Home,
+		component: () => import("../views/Home.vue"),
 		meta: {
 			requiresAuth: false,
-			title: 'Horizonte Azul - Página principal'
-		}
+			title: "Horizonte Azul - Página principal",
+		},
 	},
 	{
 		path: "/login",
 		name: "login",
-		component: Login,
+		component: () => import("../views/Login.vue"),
 		meta: {
-			title: 'Iniciar Sesión'
-		}
+			title: "Iniciar Sesión",
+		},
 	},
 	{
 		path: "/register",
 		name: "register",
-		component: Register,
+		component: () => import("../views/Register.vue"),
 		meta: {
-			title: 'Registrarse'
-		}
+			title: "Registrarse",
+		},
 	},
 	{
 		path: "/reception/dashboard",
-		name: "RecepcionDashboard",
-		component: ReceptionDashboard,
+		name: "Recepcion",
+		component: () => import("../views/reception/Reception.vue"),
 		meta: {
 			requiresAuth: true,
 			requiresReception: true,
-			title: "Panel de Recepción"
+			title: "Panel de Recepción",
 		},
 	},
 	{
 		path: "/admin/dashboard",
-		name: "AdminDashboard",
-		component: AdminDashboard,
+		name: "Admin",
+		component: () => import("../views/admin/Admin.vue"),
 		meta: {
 			requiresAuth: true,
 			requiresAdmin: true,
-			title: "Panel de Administración"
 		},
+		title: "Panel de Administración",
 	},
 	{
-		path: "/guest/dashboard",
+		path: "/guest",
 		name: "Huesped",
-		component: GuestDashboard,
+		component: () => import("../views/guest/Guest.vue"),
 		meta: {
 			requiresAuth: true,
 			requiresGuest: true,
-			title: "Panel de Huésped"
+			title: "Panel de Huésped",
 		},
+		children: [
+			{
+				path: "dashboard",
+				component: () => import("../views/guest/Dashboard.vue"),
+			},
+			{
+				path: "reservations",
+				component: () => import("../views/guest/Reservations.vue"),
+			},
+			{
+				path: "calendar",
+				component: () => import("../views/guest/Calendar.vue"),
+			},
+			{
+				path: "reservar",
+				component: () => import("../views/guest/GuestReservar.vue"),
+			},
+			{
+				path: '',
+				redirect: '/guest/dashboard'
+			}
+		],
 	},
 ];
 
@@ -72,7 +88,9 @@ const router = createRouter({
 
 // ✅ FORMA CORRECTA - Retornando valores en lugar de usar next()
 router.beforeEach(async (to, from) => {
-	const { data: { session } } = await supabase.auth.getSession();
+	const {
+		data: { session },
+	} = await supabase.auth.getSession();
 
 	// Si la ruta requiere autenticación y no hay sesión
 	if (to.meta.requiresAuth && !session) {
@@ -99,7 +117,10 @@ router.beforeEach(async (to, from) => {
 		}
 
 		// Verificar si requiere rol de recepción
-		if (to.meta.requiresReception && userData?.rol_usuario !== "Recepcionista") {
+		if (
+			to.meta.requiresReception &&
+			userData?.rol_usuario !== "Recepcionista"
+		) {
 			return "/";
 		}
 
@@ -121,4 +142,3 @@ router.afterEach((to) => {
 });
 
 export default router;
-

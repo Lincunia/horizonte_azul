@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
-import { supabase } from "../lib/supabaseClient.ts";
+import { supabase } from "../../lib/supabaseClient.ts";
+import { useToast } from "../../composables/useToast.ts";
+import ToastMessage from "../../components/ToastMessage.vue";
 
 const router = useRouter();
 
@@ -36,7 +38,6 @@ const showModal = ref(false);
 const editingUser = ref<User | null>(null);
 const searchTerm = ref("");
 const filterRol = ref<string>("todos");
-const message = ref<{ type: "success" | "error"; text: string } | null>(null);
 const estadisticas = ref<Estadisticas>({
 	totalUsuarios: 0,
 	usuariosActivos: 0,
@@ -82,12 +83,6 @@ const filteredUsers = computed(() => {
 });
 
 // Funciones
-const showMessage = (type: "success" | "error", text: string) => {
-	message.value = { type, text };
-	setTimeout(() => {
-		message.value = null;
-	}, 5000);
-};
 
 const loadUsers = async () => {
 	try {
@@ -103,7 +98,7 @@ const loadUsers = async () => {
 		await loadEstadisticas();
 	} catch (error: any) {
 		console.error("Error al cargar usuarios:", error);
-		showMessage("error", "Error al cargar los usuarios");
+		useToast().showMessage("error", "Error al cargar los usuarios");
 	} finally {
 		loading.value = false;
 	}
@@ -172,12 +167,15 @@ const createUser = async () => {
 
 		if (insertError) throw insertError;
 
-		showMessage("success", "Usuario creado exitosamente");
+		useToast().showMessage("success", "Usuario creado exitosamente");
 		closeModal();
 		await loadUsers();
 	} catch (error: any) {
 		console.error("Error al crear usuario:", error);
-		showMessage("error", error.message || "Error al crear el usuario");
+		useToast().showMessage(
+			"error",
+			error.message || "Error al crear el usuario",
+		);
 	}
 };
 
@@ -198,12 +196,15 @@ const updateUser = async () => {
 
 		if (error) throw error;
 
-		showMessage("success", "Usuario actualizado exitosamente");
+		useToast().showMessage("success", "Usuario actualizado exitosamente");
 		closeModal();
 		await loadUsers();
 	} catch (error: any) {
 		console.error("Error al actualizar usuario:", error);
-		showMessage("error", error.message || "Error al actualizar el usuario");
+		useToast().showMessage(
+			"error",
+			error.message || "Error al actualizar el usuario",
+		);
 	}
 };
 
@@ -223,11 +224,14 @@ const deleteUser = async (user: User) => {
 		// Opcional: Eliminar también de auth.users (requiere funciones de servidor)
 		// Por ahora solo eliminamos de nuestra tabla
 
-		showMessage("success", "Usuario eliminado exitosamente");
+		useToast().showMessage("success", "Usuario eliminado exitosamente");
 		await loadUsers();
 	} catch (error: any) {
 		console.error("Error al eliminar usuario:", error);
-		showMessage("error", error.message || "Error al eliminar el usuario");
+		useToast().showMessage(
+			"error",
+			error.message || "Error al eliminar el usuario",
+		);
 	}
 };
 
@@ -240,14 +244,16 @@ const toggleUserStatus = async (user: User) => {
 
 		if (error) throw error;
 
-		showMessage(
+		useToast().showMessage(
 			"success",
 			`Usuario ${user.activo ? "desactivado" : "activado"} exitosamente`,
 		);
+
 		await loadUsers();
 	} catch (error: any) {
 		console.error("Error al cambiar estado:", error);
-		showMessage("error", "Error al cambiar el estado del usuario");
+
+		useToast().showMessage("error", "Error al cambiar el estado del usuario");
 	}
 };
 
@@ -300,7 +306,7 @@ const handleLogout = async () => {
 	const { error } = await supabase.auth.signOut();
 	if (error) {
 		console.error("Error al cerrar sesión:", error);
-		showMessage("error", "Error al cerrar sesión");
+		useToast().showMessage("error", "Error al cerrar sesión");
 	} else {
 		router.push("/login");
 	}
@@ -327,15 +333,15 @@ onMounted(() => {
 		<div class="navbar">
 			<h1>Panel de Administración</h1>
 			<div>
-				<button @click="goToHome">🏠 Inicio</button>
-				<button @click="handleLogout">🚪 Cerrar Sesión</button>
+				<button class="btn" @click="goToHome">Inicio</button>
+				<button class="btn btn-critical" @click="handleLogout">
+					Cerrar Sesión
+				</button>
 			</div>
 		</div>
 
 		<!-- Mensajes -->
-		<div v-if="message" :class="['message', message.type]">
-			{{ message.text }}
-		</div>
+		<ToastMessage />
 
 		<!-- Estadísticas -->
 		<div>
@@ -367,7 +373,7 @@ onMounted(() => {
 
 		<!-- Controles -->
 		<div>
-			<button @click="openCreateModal">➕ Crear Usuario</button>
+			<button class="btn" @click="openCreateModal">➕ Crear Usuario</button>
 
 			<div>
 				<input
@@ -427,14 +433,23 @@ onMounted(() => {
 						<td>{{ formatDate(user.fecha_registro) }}</td>
 						<td>{{ formatDate(user.ultimo_acceso) }}</td>
 						<td>
-							<button @click="openEditModal(user)" title="Editar">✏️</button>
+							<button class="btn" @click="openEditModal(user)" title="Editar">
+								✏️
+							</button>
 							<button
+								class="btn btn-secondary"
 								@click="toggleUserStatus(user)"
 								:title="user.activo ? 'Desactivar' : 'Activar'"
 							>
 								{{ user.activo ? "🔴" : "🟢" }}
 							</button>
-							<button @click="deleteUser(user)" title="Eliminar">🗑️</button>
+							<button
+								class="btn btn-critical"
+								@click="deleteUser(user)"
+								title="Eliminar"
+							>
+								🗑️
+							</button>
 						</td>
 					</tr>
 					<tr v-if="filteredUsers.length === 0">
@@ -449,7 +464,7 @@ onMounted(() => {
 			<div>
 				<div>
 					<h2>{{ editingUser ? "Editar Usuario" : "Crear Nuevo Usuario" }}</h2>
-					<button @click="closeModal">&times;</button>
+					<!--<button class="btn" @click="closeModal">&times;</button>-->
 				</div>
 
 				<form @submit.prevent="editingUser ? updateUser() : createUser()">
@@ -517,10 +532,12 @@ onMounted(() => {
 					</div>
 
 					<div>
-						<button type="submit">
+						<button class="btn" type="submit">
 							{{ editingUser ? "Actualizar" : "Crear" }}
 						</button>
-						<button type="button" @click="closeModal">Cancelar</button>
+						<button type="button" class="btn btn-critical" @click="closeModal">
+							Cancelar
+						</button>
 					</div>
 				</form>
 			</div>

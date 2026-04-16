@@ -1,89 +1,95 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import { supabase } from "../../lib/supabaseClient.ts";
+import { useToast } from "../../composables/useToast.ts";
+import ToastMessage from "../../components/ToastMessage.vue";
+
+const router = useRouter();
 
 const habitaciones = ref([
-  { numero: 101, tipo: "Individual", estado: "Disponible", precio: 100000 },
-  { numero: 203, tipo: "Doble", estado: "Ocupada", precio: 180000 }
+	{ numero: 101, tipo: "Individual", estado: "Disponible", precio: 100000 },
+	{ numero: 203, tipo: "Doble", estado: "Ocupada", precio: 180000 },
 ]);
 
 const filtroTexto = ref("");
 const filtroEstado = ref("");
 
 const habitacionesFiltradas = computed(() => {
-  return habitaciones.value.filter(h => {
-    return (
-      (h.numero.toString().includes(filtroTexto.value) ||
-        h.tipo.toLowerCase().includes(filtroTexto.value.toLowerCase())) &&
-      (filtroEstado.value === "" || h.estado === filtroEstado.value)
-    );
-  });
+	return habitaciones.value.filter((h) => {
+		return (
+			(h.numero.toString().includes(filtroTexto.value) ||
+				h.tipo.toLowerCase().includes(filtroTexto.value.toLowerCase())) &&
+			(filtroEstado.value === "" || h.estado === filtroEstado.value)
+		);
+	});
 });
 
 const reservas = ref([
-  {
-    id: 1,
-    cliente: "Juan Pérez",
-    habitacion: 101,
-    entrada: "2026-04-15",
-    salida: "2026-04-18",
-    estado: "Activa"
-  }
+	{
+		id: 1,
+		cliente: "Juan Pérez",
+		habitacion: 101,
+		entrada: "2026-04-15",
+		salida: "2026-04-18",
+		estado: "Activa",
+	},
 ]);
 
 const nuevaReserva = ref({
-  cliente: "",
-  habitacion: "",
-  entrada: "",
-  salida: ""
+	cliente: "",
+	habitacion: "",
+	entrada: "",
+	salida: "",
 });
 
 const crearReserva = () => {
-  reservas.value.push({
-    id: Date.now(),
-    ...nuevaReserva.value,
-    estado: "Activa"
-  });
+	reservas.value.push({
+		id: Date.now(),
+		...nuevaReserva.value,
+		estado: "Activa",
+	});
 };
 
 const cancelarReserva = (id: number) => {
-  reservas.value = reservas.value.map(r =>
-    r.id === id ? { ...r, estado: "Cancelada" } : r
-  );
+	reservas.value = reservas.value.map((r) =>
+		r.id === id ? { ...r, estado: "Cancelada" } : r,
+	);
 };
 
 const modificarReserva = (reserva: any) => {
-  nuevaReserva.value = { ...reserva };
+	nuevaReserva.value = { ...reserva };
 };
 
 const checkIn = (reserva: any) => {
-  reserva.estado = "Check-in";
+	reserva.estado = "Check-in";
 };
 
 const checkOut = (reserva: any) => {
-  reserva.estado = "Finalizada";
+	reserva.estado = "Finalizada";
 };
 
 const calcularDias = (entrada: string, salida: string) => {
-  const inicio = new Date(entrada);
-  const fin = new Date(salida);
-  const diff = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24);
-  return diff || 1;
+	const inicio = new Date(entrada);
+	const fin = new Date(salida);
+	const diff = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24);
+	return diff || 1;
 };
 
 const generarFactura = (reserva: any) => {
-  const habitacion = habitaciones.value.find(
-    h => h.numero == reserva.habitacion
-  );
+	const habitacion = habitaciones.value.find(
+		(h) => h.numero == reserva.habitacion,
+	);
 
-  if (!habitacion) {
-    alert("Habitación no encontrada");
-    return;
-  }
+	if (!habitacion) {
+		alert("Habitación no encontrada");
+		return;
+	}
 
-  const dias = calcularDias(reserva.entrada, reserva.salida);
-  const total = dias * habitacion.precio;
+	const dias = calcularDias(reserva.entrada, reserva.salida);
+	const total = dias * habitacion.precio;
 
-  alert(`
+	alert(`
     FACTURA
     ------------------------
     Cliente: ${reserva.cliente}
@@ -93,19 +99,39 @@ const generarFactura = (reserva: any) => {
     TOTAL: $${total}
   `);
 };
+
+const handleLogout = async () => {
+	const { error } = await supabase.auth.signOut();
+	if (error) {
+		console.error("Error al cerrar sesión:", error);
+		useToast().showMessage("error", "Error al cerrar sesión");
+	} else {
+		setTimeout(() => {
+			router.push("/login");
+		}, 1500);
+	}
+};
 </script>
 
 <template>
 	<div class="recepcion-container">
 		<h1>Panel de Recepcionista</h1>
 
+		<button class="btn btn-critical" @click="handleLogout">
+			Cerrar Sesión
+		</button>
+		<ToastMessage />
 		<section>
 			<h2>Buscar Habitaciones</h2>
 
 			<div>
-				<input v-model="filtroTexto" type="text" placeholder="Número o tipo de habitación" />
+				<input
+					v-model="filtroTexto"
+					type="text"
+					placeholder="Número o tipo de habitación"
+				/>
 				<select v-model="filtroEstado">
-  					<option value="">Estado</option>
+					<option value="">Estado</option>
 					<option>Disponible</option>
 					<option>Ocupada</option>
 					<option>Mantenimiento</option>
@@ -135,7 +161,11 @@ const generarFactura = (reserva: any) => {
 			<h2>Gestión de Reservas</h2>
 
 			<div>
-				<input v-model="nuevaReserva.cliente" type="text" placeholder="Nombre del cliente" />
+				<input
+					v-model="nuevaReserva.cliente"
+					type="text"
+					placeholder="Nombre del cliente"
+				/>
 				<input v-model="nuevaReserva.entrada" type="date" />
 				<input v-model="nuevaReserva.salida" type="date" />
 				<select v-model="nuevaReserva.habitacion">
@@ -146,10 +176,9 @@ const generarFactura = (reserva: any) => {
 				</select>
 
 				<button @click="crearReserva">Crear Reserva</button>
-
 			</div>
 
- 			<table>
+			<table>
 				<thead>
 					<tr>
 						<th>Cliente</th>
