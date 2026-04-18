@@ -8,6 +8,7 @@
 	--text-h: #0a2a5e;
 	--rojo: #e40714;
 	--verde: #00973f;
+	--amarillo: #fff3cd;
 
 	--sans: "Poppins", sans-serif;
 	--heading: system-ui, "Segoe UI", Roboto, sans-serif;
@@ -112,6 +113,7 @@ input:focus {
 .btn-secondary {
 	background: gray;
 }
+
 .btn-critical {
 	background: var(--rojo);
 }
@@ -230,5 +232,13 @@ body {
 	padding: 0.75rem;
 	color: var(--rojo);
 	border-radius: 4px;
+	text-align: center;
+}
+
+.info-message {
+	background-color: #ffeeba;
+	padding: 0.75rem;
+	border-radius: 4px;
+	margin: 1rem;
 	text-align: center;
 }

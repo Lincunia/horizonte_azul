@@ -313,13 +313,11 @@ const goToHome = (): void => {
 
 			<h2>Registro</h2>
 
-			<div v-if="isBlocked" class="blocked-message">
+			<div v-if="isBlocked" class="info-message">
 				<h3>Verificación pendiente</h3>
 				<p>Se ha enviado un correo de verificación a tu cuenta</p>
 				<p>Tiempo restante: {{ timeLeft }} segundos</p>
-				<p class="small-text">
-					Revisa tu bandeja de entrada y haz clic en el enlace de verificación
-				</p>
+				<p>Revisa tu bandeja de entrada y haz clic en el enlace de verificación</p>
 			</div>
 
 			<form @submit.prevent="handleRegister">
@@ -423,29 +421,3 @@ const goToHome = (): void => {
 		</div>
 	</div>
 </template>
-
-<style scoped>
-.blocked-message {
-	background-color: #fff3cd;
-	border: 1px solid #ffeeba;
-	color: #856404;
-	padding: 12px;
-	border-radius: 4px;
-	margin-bottom: 20px;
-	text-align: center;
-}
-
-.blocked-message p {
-	margin: 5px 0;
-}
-
-.small-text {
-	font-size: 12px;
-	color: #666;
-}
-
-.btn:disabled {
-	opacity: 0.6;
-	cursor: not-allowed;
-}
-</style>
