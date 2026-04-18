@@ -54,11 +54,12 @@ const cancelReservation = async (id: number) => {
 	if (!confirm("¿Estás seguro de cancelar esta reserva?")) return;
 
 	try {
+		const penalizacionValue = await calcularPenalizacion(id);
 		const { error } = await supabase
 			.from("reservas")
 			.update({
 				estado: "Cancelada",
-				penalizacion: calcularPenalizacion(id),
+				penalizacion: penalizacionValue,
 			})
 			.eq("id_reserva", id);
 
@@ -75,7 +76,6 @@ const cancelReservation = async (id: number) => {
 const calcularPenalizacion = async (id: number) => {
 	const reserva = reservations.value.find((r) => r.id_reserva === id);
 	if (!reserva) return 0;
-
 	const hoy = new Date();
 	const fechaInicio = new Date(reserva.fecha_inicio);
 	const diffDays = Math.ceil(
@@ -84,7 +84,8 @@ const calcularPenalizacion = async (id: number) => {
 
 	if (diffDays < 2) {
 		return reserva.costo_total || 0;
-	} else if (diffDays < 7) {
+	}
+	if (diffDays < 7) {
 		return (reserva.costo_total || 0) * 0.5;
 	}
 	return 0;
