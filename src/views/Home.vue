@@ -31,7 +31,6 @@ const goToRegister = () => {
 
 				<button
 					class="btn"
-					style="margin-top: 10px; background: var(--naranja)"
 					@click="goToRegister"
 				>
 					Registrarse

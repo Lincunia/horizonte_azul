@@ -21,13 +21,13 @@ interface RegisterForm {
 
 const registerForm = ref<RegisterForm>({
 	idType: "CC",
-	idNum: "",
-	name: "",
-	email: "",
-	phone: "",
+	idNum: "123522312",
+	name: "Anastasio",
+	email: "anastasiomurillo76@gmail.com",
+	phone: "3112231056",
 	role: "Huesped",
-	password: "",
-	confirmPassword: "",
+	password: "bolgerie",
+	confirmPassword: "bolgerie",
 });
 
 const loading = ref(false);
@@ -88,15 +88,18 @@ const handleEmailVerification = async (email?: string) => {
 	if (!pendingDataJson || !email) return;
 
 	const pendingData: RegisterForm = JSON.parse(pendingDataJson);
-
 	if (pendingData.email !== email) return;
+
+	// Esperar un momento para que la sesión se establezca completamente
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
 	try {
 		const {
 			data: { user },
+			error: userError
 		} = await supabase.auth.getUser();
 
-		if (!user) {
+		if (!user || userError) {
 			throw new Error("Usuario no encontrado");
 		}
 
@@ -171,26 +174,6 @@ const startCountdown = () => {
 const handleTimeout = async () => {
 	isBlocked.value = false;
 	timeLeft.value = 0;
-
-	// Eliminar el usuario de autenticación si no verificó su correo
-	if (pendingUserData) {
-		try {
-			// Buscar y eliminar el usuario no verificado
-			const {
-				data: { users },
-			} = await supabase.auth.admin.listUsers();
-			const pendingUser = users?.find(
-				(u) => u.email === pendingUserData?.email,
-			);
-
-			if (pendingUser && !pendingUser.email_confirmed_at) {
-				await supabase.auth.admin.deleteUser(pendingUser.id);
-			}
-		} catch (error) {
-			console.error("Error al limpiar usuario no verificado:", error);
-		}
-	}
-
 	clearPendingRegistration();
 	useToast().showMessage(
 		"error",
@@ -219,7 +202,7 @@ const registerUser = async (dataUser: RegisterForm) => {
 		email: dataUser.email,
 		password: dataUser.password,
 		options: {
-			emailRedirectTo: `${window.location.origin}/register`,
+			emailRedirectTo: `${window.location.origin}/verify-email`
 		},
 	});
 
@@ -266,7 +249,6 @@ const handleRegister = async (): Promise<void> => {
 			`Registro exitoso. Se ha enviado un correo de verificación a ${registerForm.value.email}. Tienes ${timeLeft.value} segundos para verificarlo.`,
 		);
 
-		// Limpiar el formulario
 		registerForm.value = {
 			idType: "CC",
 			idNum: "",
@@ -417,7 +399,9 @@ const goToHome = (): void => {
 					¿Ya tienes cuenta? Inicia sesión
 				</p>
 			</form>
+
 			<ToastMessage />
+
 		</div>
 	</div>
 </template>

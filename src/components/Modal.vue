@@ -83,12 +83,7 @@ const handleOverlayClick = (e: MouseEvent) => {
 	justify-content: space-between;
 	align-items: center;
 	padding: 1.5rem;
-	border-bottom: 1px solid #e0e0e0;
-}
-
-.modal-header h2 {
-	margin: 0;
-	color: #2c3e50;
+	border-bottom: 1px solid var(--gris-fondo);
 }
 
 .modal-close {
@@ -100,7 +95,7 @@ const handleOverlayClick = (e: MouseEvent) => {
 }
 
 .modal-close:hover {
-	color: #e74c3c;
+	color: var(--rojo);
 }
 
 .modal-body {

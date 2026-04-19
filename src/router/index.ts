@@ -19,11 +19,20 @@ const routes = [
 			title: "Iniciar Sesión",
 		},
 	},
+    {
+        path: "/verify-email",
+        name: "verify-email",
+        component: () => import("../views/VerifyEmail.vue"),
+        meta: {
+            title: "Verificando correo",
+        },
+    },
 	{
 		path: "/register",
 		name: "register",
 		component: () => import("../views/Register.vue"),
 		meta: {
+			requiresAuth: false,
 			title: "Registrarse",
 		},
 	},
@@ -44,8 +53,8 @@ const routes = [
 		meta: {
 			requiresAuth: true,
 			requiresAdmin: true,
+			title: "Panel de Administración",
 		},
-		title: "Panel de Administración",
 	},
 	{
 		path: "/guest",
@@ -56,7 +65,6 @@ const routes = [
 			requiresGuest: true,
 			title: "Panel de Huésped",
 		},
-		title: "Panel de Huespedes",
 	},
 ];
 
@@ -65,15 +73,18 @@ const router = createRouter({
 	routes,
 });
 
-// ✅ FORMA CORRECTA - Retornando valores en lugar de usar next()
-router.beforeEach(async (to, from) => {
+// Rutas que no requieren verificación
+const publicRoutes = ["/login", "/register", "/verify-email"];
+
+// Retornando valores de navegación - se quita el "from" porque no se usa
+router.beforeEach(async (to) => {
 	const {
 		data: { session },
 	} = await supabase.auth.getSession();
 
-	// Si la ruta requiere autenticación y no hay sesión
-	if (to.meta.requiresAuth && !session) {
-		return "/login";
+	// Rutas públicas que no requieren verificación
+	if (publicRoutes.includes(to.path)) {
+		return true;
 	}
 
 	// Si hay sesión, verificar roles específicos
@@ -85,38 +96,31 @@ router.beforeEach(async (to, from) => {
 			.eq("auth_id", session.user.id)
 			.single();
 
-		if (error) {
+		if (error || !userData) {
 			console.error("Error al verificar rol:", error);
 			return "/";
 		}
 
-		// Verificar si requiere rol de administrador
 		if (to.meta.requiresAdmin && userData?.rol_usuario !== "Administrador") {
 			return "/";
 		}
 
-		// Verificar si requiere rol de recepción
-		if (
-			to.meta.requiresReception &&
-			userData?.rol_usuario !== "Recepcionista"
-		) {
+		if (to.meta.requiresReception && userData?.rol_usuario !== "Recepcionista") {
 			return "/";
 		}
 
-		// Verificar si requiere rol de huésped
 		if (to.meta.requiresGuest && userData?.rol_usuario !== "Huesped") {
 			return "/";
 		}
 	}
 
-	// Si todo está bien, permitir la navegación
 	return true;
 });
 
 // Actualizar el título de la página
 router.afterEach((to) => {
 	if (to.meta.title) {
-		document.title = to.meta.title;
+		document.title = to.meta.title as string;
 	}
 });
 

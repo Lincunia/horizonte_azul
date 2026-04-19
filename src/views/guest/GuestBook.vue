@@ -1,4 +1,3 @@
-<!-- src/views/guest/GuestBook.vue -->
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
@@ -7,7 +6,6 @@ import { useToast } from "../../composables/useToast.ts";
 import ToastMessage from "../../components/ToastMessage.vue";
 import { format } from 'date-fns';
 
-// Props en lugar de route.query
 const props = defineProps<{
 	roomId: number;
 	roomNumber: number;
@@ -78,7 +76,6 @@ const insertReservation = async () => {
 
 	loading.value = true;
 
-
 	try {
 		const { data, error } = await supabase
 			.from("reservas")
@@ -88,9 +85,9 @@ const insertReservation = async () => {
 				num_huespedes: newReservation.value.numHuespedes,
 				estado: "Pendiente",
 				costo_total: newReservation.value.costoTotal,
-				auth_id_usuario: newReservation.value.userData.user.id,
-				id_habitacion: newReservation.value.props.roomId,
-				observaciones: newReservation.value.observaciones || null,
+				auth_id_usuario: userData.user.id,
+				id_habitacion: props.roomId,
+				observaciones: newReservation.value.observations || null,
 			})
 			.select();
 
@@ -100,8 +97,6 @@ const insertReservation = async () => {
 		// Emitir evento y cerrar modal después de un delay
 		setTimeout(() => {
 			emit("reservation-complete");
-			// Opcional: recargar la lista de habitaciones
-			// Puedes emitir otro evento para refrescar
 		}, 1500);
 	} catch (error) {
 		console.error("Error creating reservation:", error);
