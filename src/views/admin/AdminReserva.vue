@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 
@@ -40,6 +40,8 @@ const users = ref<User[]>([]);
 const showEditReservaModal = ref(false);
 const showCreateReservaModal = ref(false);
 const editingReserva = ref<Reserva | null>(null);
+const searchTerm = ref("");
+const filterEstado = ref<string>("todos");
 
 // Formulario para editar reserva
 const reservaForm = ref({
@@ -60,6 +62,21 @@ const reservaCreateForm = ref({
 	estado: "Pendiente" as "Pendiente" | "Confirmada" | "Cancelada",
 	observaciones: "",
 	costo_total: 0,
+});
+
+const filteredReservas = computed(() => {
+	return reservas.value.filter((reserva) => {
+		const matchesSearch = searchTerm.value
+			? reserva.nombre_usuario?.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
+			  reserva.email_usuario?.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
+			  reserva.id_reserva.toString().includes(searchTerm.value)
+			: true;
+
+		const matchesEstado =
+			filterEstado.value === "todos" || reserva.estado === filterEstado.value;
+
+		return matchesSearch && matchesEstado;
+	});
 });
 
 // Funciones
@@ -286,13 +303,26 @@ onMounted(() => {
 <template>
 	<div>
 		<!-- Controles -->
-		<div>
-			<button class="btn" @click="openCreateReservaModal">
-				➕ Crear Reserva
-			</button>
+	<div class="admin-controls">
+		<button class="btn" @click="openCreateReservaModal">
+			➕ Crear Reserva
+		</button>
+		<div class="filters">
+			<input
+				type="search"
+				v-model="searchTerm"
+				placeholder="Buscar por nombre, email o ID de reserva"
+			/>
+			<select v-model="filterEstado">
+				<option value="todos">Todos los estados</option>
+				<option value="Pendiente">Pendiente</option>
+				<option value="Confirmada">Confirmada</option>
+				<option value="Cancelada">Cancelada</option>
+			</select>
 		</div>
+	</div>
 
-		<!-- Tabla de reservas -->
+	<!-- Tabla de reservas -->
 		<div>
 			<h2>Reservas</h2>
 			<table class="users-table">
@@ -312,7 +342,7 @@ onMounted(() => {
 				</tr>
 				</thead>
 				<tbody>
-				<tr v-for="reserva in reservas" :key="reserva.id_reserva">
+				<tr v-for="reserva in filteredReservas" :key="reserva.id_reserva">
 					<td>{{ reserva.id_reserva }}</td>
 					<td>{{ reserva.nombre_usuario }}</td>
 					<td>{{ reserva.email_usuario }}</td>
@@ -321,7 +351,9 @@ onMounted(() => {
 					<td>{{ formatDate(reserva.fecha_reserva) }}</td>
 					<td>{{ formatDate(reserva.fecha_inicio) }}</td>
 					<td>{{ formatDate(reserva.fecha_fin) }}</td>
-					<td>{{ reserva.estado }}</td>
+					<td>
+						<span :class="['estado-badge', reserva.estado.toLowerCase()]">{{ reserva.estado }}</span>
+					</td>
 					<td>${{ reserva.costo_total }}</td>
 					<td>
 						<button class="btn" @click="openEditReservaModal(reserva)" title="Editar">
@@ -574,6 +606,57 @@ div:has(> .btn:first-child) .btn-critical:hover {
 
 .users-table .btn-critical:hover {
 	background: #fecaca;
+}
+
+/* Filtros */
+.admin-controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1.5rem;
+}
+
+.filters {
+	display: flex;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+.filters input,
+.filters select {
+	padding: 0.75rem 1rem;
+	border: 1px solid #d1d5db;
+	border-radius: 0.5rem;
+	min-width: 180px;
+}
+
+/* Estado Badges */
+.estado-badge {
+	padding: 0.35rem 0.85rem;
+	border-radius: 9999px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	display: inline-block;
+}
+
+.estado-badge.pendiente {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.estado-badge.confirmada {
+	background: #dcfce7;
+	color: #166534;
+}
+
+.estado-badge.cancelada {
+	background: #fee2e2;
+	color: #991b1b;
 }
 
 /* Modales */
