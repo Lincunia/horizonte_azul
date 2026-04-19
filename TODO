@@ -1,6 +1,8 @@
 DONE:
 Cifrar contraseña
 Modificar tabla de autenticatión en supabase
+Hacer todo lo de huespedes (Lincunia)
+Hacer todo lo de administrador (cnajerat-hash)
 
 TODO:
 Arreglar los errores hechos con la IA
@@ -9,6 +11,6 @@ Averiguar como hacer unit tests dentro de proyectos de VueJS
 DOING:
 ¿Cómo se enlaza la autenticación de Supabase con una tabla de PostgreSQL?
 Averiguando los elementos internos de 'src/router/index.ts' (Lincunia)
-Hacer todo lo de huespedes (Lincunia)
-Hacer todo lo de administrador (cnajerat-hash)
-Hacer todo lo de recepción (Mad)
+Hacer todo lo de recepción (Marcoanpolo)
+Arreglar e implementar la tabla status code en caso de un error
+Depurar antes de mandar a compilar

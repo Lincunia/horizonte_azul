@@ -149,7 +149,7 @@ onMounted(() => {
 
 		<div v-else-if="reservations.length === 0" class="empty-state">
 			<p>📭 No tienes reservas aún</p>
-			<router-link to="/guest/dashboard" class="btn btn-primary">
+			<router-link to="/guest/dashboard" class="btn">
 				Ver habitaciones disponibles
 			</router-link>
 		</div>
@@ -255,7 +255,7 @@ onMounted(() => {
 							reservation.estado === 'Pendiente' ||
 							reservation.estado === 'Confirmada'
 						"
-						class="btn btn-danger"
+						class="btn btn-critical"
 						@click="cancelReservation(reservation.id_reserva)"
 					>
 						Cancelar Reserva
@@ -425,22 +425,6 @@ onMounted(() => {
 	border-top: 1px solid #e9ecef;
 }
 
-.btn-danger {
-	background: #e74c3c;
-	color: white;
-	border: none;
-	padding: 0.5rem 1rem;
-	border-radius: 6px;
-	cursor: pointer;
-	font-weight: 600;
-	transition: all 0.2s ease;
-}
-
-.btn-danger:hover {
-	background: #c0392b;
-	transform: translateY(-1px);
-}
-
 .penalty-note {
 	margin-top: 0.5rem;
 	font-size: 0.75rem;
@@ -475,20 +459,5 @@ onMounted(() => {
 	text-align: center;
 	padding: 3rem;
 	color: #7f8c8d;
-}
-
-.btn-primary {
-	display: inline-block;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	color: white;
-	text-decoration: none;
-	padding: 0.75rem 1.5rem;
-	border-radius: 8px;
-	margin-top: 1rem;
-	transition: transform 0.2s ease;
-}
-
-.btn-primary:hover {
-	transform: translateY(-2px);
 }
 </style>

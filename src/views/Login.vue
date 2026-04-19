@@ -82,13 +82,13 @@ const handleLogin = async (): Promise<void> => {
 		setTimeout(() => {
 			switch (userData.rol_usuario) {
 				case "Administrador":
-					router.push("/admin/dashboard");
+					router.push("/admin");
 					break;
 				case "Recepcionista":
-					router.push("/reception/dashboard");
+					router.push("/reception");
 					break;
 				case "Huesped":
-					router.push("/guest/dashboard");
+					router.push("/guest");
 					break;
 				default:
 					router.push("/");

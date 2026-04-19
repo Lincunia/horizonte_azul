@@ -4,19 +4,13 @@ import { useRouter } from "vue-router";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import ToastMessage from "../../components/ToastMessage.vue";
+import GuestDashboard from "./GuestDashboard.vue";
+import GuestReservations from "./GuestReservations.vue";
+import GuestCalendar from "./GuestCalendar.vue";
 
 const router = useRouter();
 
-interface NavLink {
-	name: string;
-	path: string;
-}
-
-const navLinks = ref<NavLink[]>([
-	{ name: "Habitaciones", path: "/dashboard" },
-	{ name: "Lista Reservas", path: "/reservations" },
-	{ name: "Calendario", path: "/calendar" },
-]);
+const activeTab = ref<"dashboard" | "reservations" | "calendar">("dashboard");
 
 const name = ref("NavBar");
 
@@ -40,65 +34,47 @@ onMounted(() => {
 <template>
 	<div class="navbar">
 		<h1>Panel de Huésped</h1>
-
-		<div class="nav-links">
-			<a
-				v-for="link in navLinks"
-				:key="link.path"
-				:href="`/guest${link.path}`"
-				class="nav-link"
-				active-class="active"
-			>
-				{{ link.name }}
-			</a>
-		</div>
-		<div class="nav-actions">
+		<div>
+			<button class="btn" @click="goToHome">Inicio</button>
 			<button class="btn btn-critical" @click="handleLogout">
 				Cerrar Sesión
 			</button>
 		</div>
 	</div>
+
+	<!-- Pestañas -->
+	<div class="tabs">
+		<button
+			class="tab-button"
+			:class="{ active: activeTab === 'dashboard' }"
+			@click="activeTab = 'dashboard'"
+		>
+			Habitaciones
+		</button>
+		<button
+			class="tab-button"
+			:class="{ active: activeTab === 'reservations' }"
+			@click="activeTab = 'reservations'"
+		>
+			Reservas
+		</button>
+		<button
+			class="tab-button"
+			:class="{ active: activeTab === 'calendar' }"
+			@click="activeTab = 'calendar'"
+		>
+			Calendario
+		</button>
+	</div>
+
+	<!-- Mensajes -->
 	<ToastMessage />
+
+	<div class="tab-content">
+		<GuestDashboard v-if="activeTab === 'dashboard'" />
+		<GuestReservations v-if="activeTab === 'reservations'" />
+		<GuestCalendar v-if="activeTab === 'calendar'" />
+	</div>
+
 	<router-view />
 </template>
-
-<style scoped>
-.nav-links {
-	display: flex;
-	gap: 0.5rem;
-	flex-wrap: wrap;
-}
-
-.nav-link {
-	color: rgba(255, 255, 255, 0.9);
-	padding: 0.75rem;
-	margin: 0.5rem;
-	border-radius: 4px;
-	border: none;
-	font-weight: bold;
-	transition: 0.3s;
-	font-size: 1rem;
-}
-
-.nav-link:hover {
-	color: white;
-	background: rgba(255, 255, 255, 0.15);
-}
-
-.nav-link.active {
-	color: white;
-	background: rgba(255, 255, 255, 0.25);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.nav-link.active::after {
-	content: "";
-	position: absolute;
-	bottom: -2px;
-	left: 50%;
-	width: 30px;
-	height: 3px;
-	background: white;
-	border-radius: 2px;
-}
-</style>

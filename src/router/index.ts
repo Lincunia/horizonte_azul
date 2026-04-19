@@ -28,7 +28,7 @@ const routes = [
 		},
 	},
 	{
-		path: "/reception/dashboard",
+		path: "/reception",
 		name: "Recepcion",
 		component: () => import("../views/reception/Reception.vue"),
 		meta: {
@@ -38,7 +38,7 @@ const routes = [
 		},
 	},
 	{
-		path: "/admin/dashboard",
+		path: "/admin",
 		name: "Admin",
 		component: () => import("../views/admin/Admin.vue"),
 		meta: {
@@ -56,28 +56,7 @@ const routes = [
 			requiresGuest: true,
 			title: "Panel de Huésped",
 		},
-		children: [
-			{
-				path: "dashboard",
-				component: () => import("../views/guest/Dashboard.vue"),
-			},
-			{
-				path: "reservations",
-				component: () => import("../views/guest/Reservations.vue"),
-			},
-			{
-				path: "calendar",
-				component: () => import("../views/guest/Calendar.vue"),
-			},
-			{
-				path: "reservar",
-				component: () => import("../views/guest/GuestReservar.vue"),
-			},
-			{
-				path: '',
-				redirect: '/guest/dashboard'
-			}
-		],
+		title: "Panel de Huespedes",
 	},
 ];
 

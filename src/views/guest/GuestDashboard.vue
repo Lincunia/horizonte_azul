@@ -2,9 +2,10 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
-import { useRouter } from "vue-router";
+import Modal from "../../components/Modal.vue";
+import GuestBook from "./GuestBook.vue";
 
-interface Habitacion {
+interface Room {
 	id_habitacion: number;
 	numero: number;
 	tipo: "Individual" | "Doble" | "Suite" | "Familiar";
@@ -15,9 +16,10 @@ interface Habitacion {
 	estado: "Libre" | "Reservada" | "Ocupada" | "Mantenimiento" | "Limpieza";
 }
 
-const rooms = ref<Habitacion[]>([]);
+const rooms = ref<Room[]>([]);
 const loading = ref(true);
-const router = useRouter();
+const showModal = ref(false);
+const selectedRoom = ref<Room | null>(null);
 
 const fetchRooms = async () => {
 	try {
@@ -46,18 +48,12 @@ const getTipoIcon = (tipo: string) => {
 	return icons[tipo as keyof typeof icons] || "🏠";
 };
 
-const getTipoTexto = (tipo: string) => {
-	const textos = {
-		Individual: "Individual",
-		Doble: "Doble",
-		Suite: "Suite",
-		Familiar: "Familiar",
-	};
-	return textos[tipo as keyof typeof textos] || tipo;
-};
-
-const reservarHabitacion = (habitacion: Habitacion) => {
+const reservarRoom = (habitacion: Room) => {
 	if (habitacion.estado == "Libre") {
+		showModal.value = true;
+		selectedRoom.value = habitacion;
+		return;
+		/*
 		router.push({
 			path: "/guest/reservar",
 			query: {
@@ -66,7 +62,17 @@ const reservarHabitacion = (habitacion: Habitacion) => {
 				precio: habitacion.precio_noche.toString(),
 			},
 		});
+		*/
 	}
+	useToast().showMessage(
+		"error",
+		`La habitacion #${habitacion.numero} no se encuentra libre`,
+	);
+};
+
+const closeModal = () => {
+	showModal.value = false;
+	selectedRoom.value = null;
 };
 
 onMounted(() => {
@@ -78,7 +84,7 @@ onMounted(() => {
 <template>
 	<div class="guest-dashboard">
 		<div class="dashboard-header">
-			<h2>🏨 Habitaciones Disponibles</h2>
+			<h2>🏨 Roomes Disponibles</h2>
 			<p>Encuentra la habitación perfecta para tu estadía</p>
 		</div>
 
@@ -99,7 +105,7 @@ onMounted(() => {
 				</div>
 
 				<div class="room-body">
-					<h3>{{ getTipoTexto(room.tipo) }}</h3>
+					<h3>{{ room.tipo }}</h3>
 
 					<div class="room-details">
 						<div class="detail">
@@ -120,19 +126,34 @@ onMounted(() => {
 						</div>
 					</div>
 
-					<div class="room-price">
+					<div>
+						<button
+						class="btn btn-primary"
+						@click="reservarRoom(room)"
+						:disabled="room.estado !== 'Libre'"
+						>
+							Reservar Ahora
+						</button>
 						<span class="price">${{ room.precio_noche }}</span>
 						<span class="per-night">/ noche</span>
 					</div>
 				</div>
-
-				<div class="room-footer">
-					<button class="btn btn-primary" @click="reservarHabitacion(room)">
-						Reservar Ahora
-					</button>
-				</div>
 			</div>
 		</div>
+<!-- Modal para reservar -->
+		<Modal 
+			v-model="showModal" 
+			:title="`Reservar Habitación #${selectedRoom?.numero || ''}`"
+			@close="closeModal"
+		>
+			<GuestBook 
+				v-if="selectedRoom"
+				:room-id="selectedRoom.id_habitacion"
+				:room-number="selectedRoom.numero"
+				:price-per-night="selectedRoom.precio_noche"
+				@reservation-complete="closeModal"
+			/>
+		</Modal>
 	</div>
 </template>
 
@@ -211,11 +232,6 @@ onMounted(() => {
 	border-bottom: 1px solid #ecf0f1;
 }
 
-.room-price {
-	margin-top: 1rem;
-	text-align: right;
-}
-
 .price {
 	font-size: 1.5rem;
 	font-weight: bold;
@@ -226,11 +242,6 @@ onMounted(() => {
 	color: #7f8c8d;
 	font-size: 0.875rem;
 }
-
-.room-footer {
-	padding: 1rem 1.5rem 1.5rem;
-}
-
 
 .loading {
 	text-align: center;
