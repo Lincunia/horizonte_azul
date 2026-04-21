@@ -48,21 +48,11 @@ const getTipoIcon = (tipo: string) => {
 	return icons[tipo as keyof typeof icons] || "🏠";
 };
 
-const reservarRoom = (habitacion: Room) => {
+const bookRoom = (habitacion: Room) => {
 	if (habitacion.estado == "Libre") {
 		showModal.value = true;
 		selectedRoom.value = habitacion;
 		return;
-		/*
-		router.push({
-			path: "/guest/reservar",
-			query: {
-				id: habitacion.id_habitacion.toString(),
-				numero: habitacion.numero.toString(),
-				precio: habitacion.precio_noche.toString(),
-			},
-		});
-		*/
 	}
 	useToast().showMessage(
 		"error",
@@ -84,7 +74,7 @@ onMounted(() => {
 <template>
 	<div class="guest-dashboard">
 		<div class="dashboard-header">
-			<h2>🏨 Roomes Disponibles</h2>
+			<h2>🏨Habitaciones Disponibles</h2>
 			<p>Encuentra la habitación perfecta para tu estadía</p>
 		</div>
 
@@ -128,9 +118,9 @@ onMounted(() => {
 
 					<div>
 						<button
-						class="btn btn-primary"
-						@click="reservarRoom(room)"
-						:disabled="room.estado !== 'Libre'"
+							class="btn btn-primary"
+							@click="bookRoom(room)"
+							:disabled="room.estado !== 'Libre'"
 						>
 							Reservar Ahora
 						</button>
@@ -140,13 +130,13 @@ onMounted(() => {
 				</div>
 			</div>
 		</div>
-<!-- Modal para reservar -->
-		<Modal 
-			v-model="showModal" 
+		<!-- Modal para reservar -->
+		<Modal
+			v-model="showModal"
 			:title="`Reservar Habitación #${selectedRoom?.numero || ''}`"
 			@close="closeModal"
 		>
-			<GuestBook 
+			<GuestBook
 				v-if="selectedRoom"
 				:room-id="selectedRoom.id_habitacion"
 				:room-number="selectedRoom.numero"
@@ -169,11 +159,6 @@ onMounted(() => {
 	margin-bottom: 2rem;
 }
 
-.dashboard-header h2 {
-	font-size: 2rem;
-	margin-bottom: 0.5rem;
-}
-
 .rooms-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -185,9 +170,6 @@ onMounted(() => {
 	border-radius: 12px;
 	overflow: hidden;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-	transition:
-		transform 0.3s ease,
-		box-shadow 0.3s ease;
 }
 
 .room-header {
@@ -272,3 +254,4 @@ onMounted(() => {
 	padding: 3rem;
 }
 </style>
+

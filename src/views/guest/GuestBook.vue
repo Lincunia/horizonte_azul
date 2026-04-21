@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { ref, reactive } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import ToastMessage from "../../components/ToastMessage.vue";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 
 const props = defineProps<{
 	roomId: number;
@@ -15,61 +14,166 @@ const props = defineProps<{
 interface Reservation {
 	startDate: string;
 	endDate: string;
-	numHuespedes: number;
+	numGuests: number;
 	observations: string;
-	costoTotal: number;
+	totalPrice: number;
+	paymentMethod: "Efectivo" | "Tarjeta crédito" | "Tarjeta débito" | "Transferencia" | "Otro";
 }
 
 const emit = defineEmits<{
 	(e: "reservation-complete"): void;
 }>();
 
-const router = useRouter();
-
 const loading = ref(false);
-
+const TAX_RATE = 0.19;
 const daysStaying = ref(0);
+const subtotal = ref(0);
+const taxes = ref(0);
 
-const newReservation = ref<Reservation>({
+const newReservation = reactive<Reservation>({
 	startDate: "",
 	endDate: "",
-	numHuespedes: "",
+	numGuests: 1,
 	observations: "",
-	costoTotal: 0,
+	totalPrice: 0,
+	paymentMethod: "Efectivo",
 });
 
-const calcularCosto = () => {
-	if (newReservation.value.startDate && newReservation.value.endDate) {
-		const sDate = new Date(newReservation.value.startDate);
-		const eDate = new Date(newReservation.value.endDate);
-		const diffTime = Math.abs(eDate.getTime() - sDate.getTime());
+const calculatePrice = () => {
+	if (newReservation.startDate && newReservation.endDate) {
+		const startDate = new Date(newReservation.startDate);
+		const endDate = new Date(newReservation.endDate);
+		const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
 		daysStaying.value = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-		newReservation.value.costoTotal = daysStaying.value * props.pricePerNight;
+		subtotal.value = daysStaying.value * props.pricePerNight;
+		taxes.value = subtotal.value * TAX_RATE;
+		newReservation.totalPrice = subtotal.value + taxes.value;
 	}
 };
 
-const insertReservation = async () => {
-
-	if (!newReservation.value.startDate || !newReservation.value.endDate) {
-		useToast().showMessage("error", "Selecciona las fechas de estadía");
-		return;
-	}
-
+const checkDates = (): boolean => {
 	const currentDate = new Date();
-	const dateFormat = format(currentDate, 'yyyy-MM-dd');
+	const today = format(currentDate, "yyyy-MM-dd");
 
-	if (newReservation.value.startDate < dateFormat) {
-		useToast().showMessage("error", "Fecha no válida de check in");
+	if (!newReservation.startDate) {
+		useToast().showMessage("error", "Selecciona una fecha de check-in");
+		return false;
+	}
+
+	if (!newReservation.endDate) {
+		useToast().showMessage("error", "Selecciona una fecha de check-out");
+		return false;
+	}
+
+	if (newReservation.startDate < today) {
+		useToast().showMessage(
+			"error",
+			"La fecha de check-in no puede ser anterior a hoy",
+		);
+		return false;
+	}
+
+	if (newReservation.startDate >= newReservation.endDate) {
+		useToast().showMessage(
+			"error",
+			"La fecha de check-out debe ser posterior a la fecha de check-in",
+		);
+		return false;
+	}
+
+	return true;
+};
+
+const checkAvailability = async (): Promise<boolean> => {
+	try {
+		const { data, error } = await supabase
+			.from("reservas")
+			.select("fecha_inicio, fecha_fin")
+			.eq("id_habitacion", props.roomId)
+			.in("estado", ["Pendiente", "Confirmada"]);
+
+		if (error) throw error;
+
+		const newStartDate = new Date(newReservation.startDate);
+		const newEndDate = new Date(newReservation.endDate);
+
+		for (const reserva of data || []) {
+			const startReservation = new Date(reserva.fecha_inicio);
+			const endReservation = new Date(reserva.fecha_fin);
+
+			if (
+				(newStartDate >= startReservation && newStartDate < endReservation) ||
+				(newEndDate > startReservation && newEndDate <= endReservation) ||
+				(newStartDate <= startReservation && newEndDate >= endReservation)
+			) {
+				useToast().showMessage(
+					"error",
+					"La habitación no está disponible en las fechas seleccionadas",
+				);
+				return false;
+			}
+		}
+
+		return true;
+	} catch (error) {
+		console.error("Error verificando disponibilidad:", error);
+		useToast().showMessage("error", "Error al verificar disponibilidad");
+		return false;
+	}
+};
+
+const insertReservation = async (userId: string) => {
+	const { data, error } = await supabase
+		.from("reservas")
+		.insert({
+			fecha_inicio: newReservation.startDate,
+			fecha_fin: newReservation.endDate,
+			num_huespedes: newReservation.numGuests,
+			estado: "Pendiente",
+			costo_total: newReservation.totalPrice,
+			auth_id_usuario: userId,
+			id_habitacion: props.roomId,
+			observaciones: newReservation.observations || null,
+		})
+		.select()
+		.single();
+		
+	if (error) throw error;
+	return data;
+};
+
+const insertBill = async (reservationId: number) => {
+	const { data, error } = await supabase
+		.from("facturas")
+		.insert({
+			subtotal: subtotal.value,
+			impuestos: taxes.value,
+			total: newReservation.totalPrice,
+			metodo_pago: newReservation.paymentMethod,
+			estado_pago: "Pendiente",
+			id_reserva: reservationId,
+		})
+		.select()
+		.single();
+		
+	if (error) throw error;
+};
+
+const insertTablesInformation = async () => {
+	// Validar fechas
+	if (!checkDates()) {
 		return;
 	}
 
-	if (newReservation.value.startDate > newReservation.value.endDate || newReservation.value.endDate < dateFormat) {
-		useToast().showMessage("error", "Fecha no válida de check out");
+	// Validar número de huéspedes
+	if (!newReservation.numGuests || newReservation.numGuests < 1) {
+		useToast().showMessage("error", "Ingresa un número válido de huéspedes");
 		return;
 	}
 
-	const { data: userData } = await supabase.auth.getUser();
-	if (!userData.user) {
+	// Obtener usuario actual
+	const { data: userData, error: userError } = await supabase.auth.getUser();
+	if (userError || !userData.user) {
 		useToast().showMessage("error", "Usuario no autenticado");
 		return;
 	}
@@ -77,71 +181,105 @@ const insertReservation = async () => {
 	loading.value = true;
 
 	try {
-		const { data, error } = await supabase
-			.from("reservas")
-			.insert({
-				fecha_inicio: newReservation.value.startDate,
-				fecha_fin: newReservation.value.endDate,
-				num_huespedes: newReservation.value.numHuespedes,
-				estado: "Pendiente",
-				costo_total: newReservation.value.costoTotal,
-				auth_id_usuario: userData.user.id,
-				id_habitacion: props.roomId,
-				observaciones: newReservation.value.observations || null,
-			})
-			.select();
+		// Verificar disponibilidad
+		const available = await checkAvailability();
+		if (!available) {
+			return;
+		}
 
-		if (error) throw error;
+		// Insertar reserva
+		const reservationData = await insertReservation(userData.user.id);
+		
+		// Insertar factura
+		await insertBill(reservationData.id_reserva);
+
 		useToast().showMessage("success", "Reserva creada exitosamente");
 
 		// Emitir evento y cerrar modal después de un delay
 		setTimeout(() => {
 			emit("reservation-complete");
 		}, 1500);
-	} catch (error) {
+		
+	} catch (error: any) {
 		console.error("Error creating reservation:", error);
-		useToast().showMessage("error", "Error al crear reserva");
+
+		if (error.code === "23505") {
+			useToast().showMessage(
+				"error",
+				"Ya existe una reserva para estas fechas",
+			);
+		} else if (error.message) {
+			useToast().showMessage("error", error.message);
+		} else {
+			useToast().showMessage("error", "Error al crear reserva");
+		}
 	} finally {
 		loading.value = false;
 	}
 };
 
-const cancelar = () => {
+const cancelBook = () => {
 	emit("reservation-complete");
+};
+
+// Obtener fecha mínima (mañana)
+const getMinDate = () => {
+	const date = new Date();
+	date.setDate(date.getDate() + 1);
+	return format(date, "yyyy-MM-dd");
 };
 </script>
 
 <template>
 	<div class="guest-book">
-		<p class="price">${{ pricePerNight }} por noche</p>
+		<p class="price">${{ pricePerNight }} <span class="per-night">/ noche</span></p>
 
-		<form @submit.prevent="insertReservation">
-			<div class="form-group">
+		<form @submit.prevent="insertTablesInformation">
+			<div class="input-group">
 				<label>Fecha de Check-in</label>
 				<input
 					type="date"
 					v-model="newReservation.startDate"
-					@change="calcularCosto"
+					@change="calculatePrice"
+					:min="getMinDate()"
 					required
 				/>
 			</div>
 
-			<div class="form-group">
+			<div class="input-group">
 				<label>Fecha de Check-out</label>
 				<input
 					type="date"
 					v-model="newReservation.endDate"
-					@change="calcularCosto"
+					@change="calculatePrice"
+					:min="newReservation.startDate || getMinDate()"
 					required
 				/>
 			</div>
 
-			<div class="form-group">
+			<div class="input-group">
 				<label>Número de Huéspedes</label>
-				<input type="number" v-model="newReservation.numHuespedes" min="1" max="10" required />
+				<input
+					type="number"
+					v-model="newReservation.numGuests"
+					min="1"
+					max="10"
+					required
+				/>
 			</div>
 
-			<div class="form-group">
+			<div class="input-group">
+				<label>Método de pago</label>
+				<select v-model="newReservation.paymentMethod" required>
+					<option value="Efectivo">Efectivo</option>
+					<option value="Tarjeta crédito">Tarjeta crédito</option>
+					<option value="Tarjeta débito">Tarjeta débito</option>
+					<option value="Transferencia">Transferencia</option>
+					<option value="Otro">Otro</option>
+				</select>
+			</div>
+
+			<div class="input-group">
 				<label>Observaciones (opcional)</label>
 				<textarea
 					v-model="newReservation.observations"
@@ -150,76 +288,30 @@ const cancelar = () => {
 				></textarea>
 			</div>
 
-			<div v-if="newReservation.costoTotal > 0" class="resumen">
+			<div v-if="newReservation.totalPrice > 0" class="resumen">
 				<h3>Resumen de la reserva</h3>
+				<p>Habitación #{{ props.roomNumber }}</p>
 				<p>Días de estadía: {{ daysStaying }} noches</p>
-				<p class="total">Total: ${{ newReservation.costoTotal.toFixed(2) }}</p>
+				<p>Check-in: {{ newReservation.startDate }}</p>
+				<p>Check-out: {{ newReservation.endDate }}</p>
+				<p>Huéspedes: {{ newReservation.numGuests }}</p>
+				<p>Método de pago: {{ newReservation.paymentMethod }}</p>
+				<hr />
+				<p>Subtotal: ${{ subtotal.toFixed(2) }}</p>
+				<p>Impuestos (19%): ${{ taxes.toFixed(2) }}</p>
+				<p class="total">Total: ${{ newReservation.totalPrice.toFixed(2) }}</p>
 			</div>
 
-
-	<!-- Mensajes -->
-	<ToastMessage />
+			<ToastMessage />
 
 			<div class="form-actions">
-				<button type="button" class="btn btn-critical" @click="cancelar">
+				<button type="button" class="btn btn-critical" @click="cancelBook">
 					Cancelar
 				</button>
-				<button type="submit" class="btn btn-primary" :disabled="loading">
+				<button type="submit" class="btn" :disabled="loading">
 					{{ loading ? "Procesando..." : "Confirmar Reserva" }}
 				</button>
 			</div>
 		</form>
 	</div>
 </template>
-
-<style scoped>
-.guest-book {
-	width: 100%;
-}
-
-.price {
-	color: #667eea;
-	font-size: 1.25rem;
-	font-weight: bold;
-	margin-bottom: 1.5rem;
-	text-align: center;
-}
-
-.form-group {
-	margin-bottom: 1.5rem;
-}
-
-.form-group textarea {
-	width: 100%;
-	padding: 0.75rem;
-	border: 1px solid #ddd;
-	border-radius: 8px;
-	font-size: 1rem;
-	transition: border-color 0.2s;
-}
-
-.resumen {
-	background: #f8f9fa;
-	padding: 1rem;
-	border-radius: 8px;
-	margin-bottom: 1.5rem;
-}
-
-.resumen h3 {
-	margin: 0 0 0.5rem 0;
-	color: #2c3e50;
-}
-
-.total {
-	font-size: 1.25rem;
-	font-weight: bold;
-	color: #27ae60;
-	margin-top: 0.5rem;
-}
-
-.form-actions {
-	display: flex;
-	gap: 1rem;
-	justify-content: flex-end;
-}
-</style>

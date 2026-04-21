@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 
 interface CalendarEvent {
-	id_reserva: number;
+	reservationId: number;
 	title: string;
 	start: string;
 	end: string;
@@ -41,7 +41,7 @@ const fetchCalendarEvents = async () => {
 		if (error) throw error;
 
 		events.value = (data || []).map((reserva) => ({
-			id_reserva: reserva.id_reserva,
+			reservationId: reserva.id_reserva,
 			title: `Hab. ${reserva.habitaciones.numero} - ${reserva.estado === "Confirmada" ? "✓" : "⏳"}`,
 			start: reserva.fecha_inicio,
 			end: reserva.fecha_fin,
@@ -187,7 +187,7 @@ onMounted(() => {
 						<div v-if="getEventsForDay(day).length > 0" class="day-events">
 							<div
 								v-for="event in getEventsForDay(day)"
-								:key="event.id_reserva"
+								:key="event.reservationId"
 								:class="['event-badge', getEventClass(event.estado)]"
 								:title="`Habitación ${event.habitacion_numero} - ${event.estado}`"
 							>
@@ -460,3 +460,4 @@ onMounted(() => {
 	}
 }
 </style>
+

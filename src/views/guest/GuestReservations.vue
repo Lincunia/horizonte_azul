@@ -2,275 +2,222 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import Modal from "../../components/Modal.vue";
+import InvoiceGuest from "./InvoiceGuest.vue";
 
 interface Reserva {
 	id_reserva: number;
-	fecha_reserva: string;
 	fecha_inicio: string;
 	fecha_fin: string;
 	num_huespedes: number;
-	estado: "Pendiente" | "Confirmada" | "Cancelada" | "Completada" | "No_show";
-	check_in: string | null;
-	check_out: string | null;
-	costo_total: number | null;
-	penalizacion: number;
-	observaciones: string | null;
-	id_habitacion: number;
+	estado: string;
+	costo_total: number;
 	habitaciones: {
 		numero: number;
 		tipo: string;
-		precio_noche: number;
+	};
+	factura?: {
+		id_factura: number;
+		fecha_emision: string;
+		subtotal: number;
+		impuestos: number;
+		total: number;
+		metodo_pago: string;
+		estado_pago: string;
 	};
 }
 
 const reservations = ref<Reserva[]>([]);
 const loading = ref(true);
+const showModal = ref(false);
+const selectedFactura = ref<any>(null);
+const selectedReserva = ref<any>(null);
 
 const fetchReservations = async () => {
 	try {
 		const { data: userData } = await supabase.auth.getUser();
-
 		if (!userData.user) {
-			throw new Error("Usuario no autenticado");
+			useToast().showMessage("error", "Usuario no autenticado");
+			return;
 		}
 
+		// Obtener reservas del usuario con información de habitación y factura
 		const { data, error } = await supabase
 			.from("reservas")
-			.select(`*, habitaciones ( numero, tipo, precio_noche) `)
+			.select(`
+				*,
+				habitaciones (
+					numero,
+					tipo
+				),
+				facturas (
+					id_factura,
+					fecha_emision,
+					subtotal,
+					impuestos,
+					total,
+					metodo_pago,
+					estado_pago
+				)
+			`)
 			.eq("auth_id_usuario", userData.user.id)
 			.order("fecha_inicio", { ascending: false });
 
 		if (error) throw error;
+
 		reservations.value = data || [];
 	} catch (error) {
 		console.error("Error fetching reservations:", error);
-		useToast().showMessage("error", "Error al cargar reservas");
+		useToast().showMessage("error", "Error al cargar tus reservas");
 	} finally {
 		loading.value = false;
 	}
 };
 
-const cancelReservation = async (id: number) => {
-	if (!confirm("¿Estás seguro de cancelar esta reserva?")) return;
-
-	try {
-		const penalizacionValue = await calcularPenalizacion(id);
-		const { error } = await supabase
-			.from("reservas")
-			.update({
-				estado: "Cancelada",
-				penalizacion: penalizacionValue,
-			})
-			.eq("id_reserva", id);
-
-		if (error) throw error;
-
-		useToast().showMessage("success", "Reserva cancelada exitosamente");
-		await fetchReservations();
-	} catch (error) {
-		console.error("Error cancelling reservation:", error);
-		useToast().showMessage("error", "Error al cancelar reserva");
+const viewInvoice = (reserva: Reserva) => {
+	if (reserva.facturas) {
+		selectedFactura.value = reserva.facturas;
+		selectedReserva.value = {
+			...reserva,
+			habitaciones: reserva.habitaciones
+		};
+		showModal.value = true;
+	} else {
+		useToast().showMessage("error", "No hay factura disponible para esta reserva");
 	}
 };
 
-const calcularPenalizacion = async (id: number) => {
-	const reserva = reservations.value.find((r) => r.id_reserva === id);
-	if (!reserva) return 0;
-	const hoy = new Date();
-	const fechaInicio = new Date(reserva.fecha_inicio);
-	const diffDays = Math.ceil(
-		(fechaInicio.getTime() - hoy.getTime()) / (1000 * 3600 * 24),
-	);
-
-	if (diffDays < 2) {
-		return reserva.costo_total || 0;
-	}
-	if (diffDays < 7) {
-		return (reserva.costo_total || 0) * 0.5;
-	}
-	return 0;
+const closeModal = () => {
+	showModal.value = false;
 };
 
-const getEstadoClass = (estado: string) => {
-	const classes = {
+
+const getEstadoColor = (estado: string) => {
+	const colors = {
 		Pendiente: "status-pending",
 		Confirmada: "status-confirmed",
 		Cancelada: "status-cancelled",
-		Completada: "status-completed",
-		No_show: "status-no-show",
+		Completada: "status-completed"
 	};
-	return classes[estado as keyof typeof classes] || "";
+	return colors[estado as keyof typeof colors] || "status-pending";
 };
 
-const getEstadoTexto = (estado: string) => {
-	const textos = {
-		Pendiente: "⏳ Pendiente",
-		Confirmada: "✅ Confirmada",
-		Cancelada: "❌ Cancelada",
-		Completada: "🏁 Completada",
-		No_show: "🚫 No Show",
+const getEstadoPagoColor = (estado: string) => {
+	const colors = {
+		Pendiente: "status-pending",
+		Pagado: "status-paid",
+		Reembolsado: "status-refunded",
+		Cancelado: "status-cancelled"
 	};
-	return textos[estado as keyof typeof textos] || estado;
+	return colors[estado as keyof typeof colors] || "status-pending";
 };
 
-const formatearFecha = (fecha: string) => {
-	return new Date(fecha).toLocaleDateString("es-ES", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
+const formatDate = (date: string) => {
+	return new Date(date).toLocaleDateString('es-ES', {
+		year: 'numeric',
+		month: 'long',
+		day: 'numeric'
 	});
 };
 
-const getDiasEstadia = (inicio: string, fin: string) => {
-	const start = new Date(inicio);
-	const end = new Date(fin);
-	const diffTime = Math.abs(end.getTime() - start.getTime());
-	const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-	return diffDays;
+const formatCurrency = (amount: number) => {
+	return new Intl.NumberFormat('es-CO', {
+		style: 'currency',
+		currency: 'COP',
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 0
+	}).format(amount);
 };
 
 onMounted(() => {
 	fetchReservations();
-	useToast().hideMessage();
 });
 </script>
 
 <template>
 	<div class="guest-reservations">
-		<div class="reservations-header">
+		<div class="dashboard-header">
 			<h2>📋 Mis Reservas</h2>
-			<p class="subtitle">Historial y estado de tus reservas</p>
+			<p>Historial de todas tus reservas</p>
 		</div>
 
 		<div v-if="loading" class="loading">
 			<div class="spinner"></div>
-			<p>Cargando reservas...</p>
+			<p>Cargando tus reservas...</p>
 		</div>
 
 		<div v-else-if="reservations.length === 0" class="empty-state">
-			<p>📭 No tienes reservas aún</p>
-			<router-link to="/guest/dashboard" class="btn">
-				Ver habitaciones disponibles
-			</router-link>
+			<p>😕 No tienes reservas aún</p>
+			<p>¡Reserva tu primera habitación ahora!</p>
 		</div>
 
 		<div v-else class="reservations-list">
-			<div
-				v-for="reservation in reservations"
-				:key="reservation.id_reserva"
-				class="reservation-card"
-			>
+			<div v-for="reserva in reservations" :key="reserva.id_reserva" class="reservation-card">
 				<div class="reservation-header">
 					<div class="room-info">
-						<h3>Habitación #{{ reservation.habitaciones.numero }}</h3>
-						<span class="room-type">{{ reservation.habitaciones.tipo }}</span>
+						<span class="room-number">Habitación #{{ reserva.habitaciones.numero }}</span>
+						<span class="room-type">{{ reserva.habitaciones.tipo }}</span>
 					</div>
-					<span :class="['status-badge', getEstadoClass(reservation.estado)]">
-						{{ getEstadoTexto(reservation.estado) }}
-					</span>
-				</div>
-
-				<div class="reservation-details">
-					<div class="detail-row">
-						<div class="detail-item">
-							<span class="detail-icon">📅</span>
-							<div>
-								<div class="detail-label">Check-in</div>
-								<div class="detail-value">
-									{{ formatearFecha(reservation.fecha_inicio) }}
-								</div>
-							</div>
-						</div>
-						<div class="detail-item">
-							<span class="detail-icon">📅</span>
-							<div>
-								<div class="detail-label">Check-out</div>
-								<div class="detail-value">
-									{{ formatearFecha(reservation.fecha_fin) }}
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div class="detail-row">
-						<div class="detail-item">
-							<span class="detail-icon">👥</span>
-							<div>
-								<div class="detail-label">Huéspedes</div>
-								<div class="detail-value">
-									{{ reservation.num_huespedes }} personas
-								</div>
-							</div>
-						</div>
-						<div class="detail-item">
-							<span class="detail-icon">⏱️</span>
-							<div>
-								<div class="detail-label">Días de estadía</div>
-								<div class="detail-value">
-									{{
-										getDiasEstadia(
-											reservation.fecha_inicio,
-											reservation.fecha_fin,
-										)
-									}}
-									noches
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div class="detail-row">
-						<div class="detail-item">
-							<span class="detail-icon">💰</span>
-							<div>
-								<div class="detail-label">Costo total</div>
-								<div class="detail-value price">
-									${{ reservation.costo_total?.toFixed(2) || "0.00" }}
-								</div>
-							</div>
-						</div>
-						<div v-if="reservation.penalizacion > 0" class="detail-item">
-							<span class="detail-icon">⚠️</span>
-							<div>
-								<div class="detail-label">Penalización</div>
-								<div class="detail-value penalty">
-									${{ reservation.penalizacion.toFixed(2) }}
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div v-if="reservation.observaciones" class="observaciones">
-						<span class="detail-icon">📝</span>
-						<div>
-							<div class="detail-label">Observaciones</div>
-							<div class="detail-value">{{ reservation.observaciones }}</div>
-						</div>
+					<div class="status-badge" :class="getEstadoColor(reserva.estado)">
+						{{ reserva.estado }}
 					</div>
 				</div>
 
-				<div class="reservation-footer">
-					<button
-						v-if="
-							reservation.estado === 'Pendiente' ||
-							reservation.estado === 'Confirmada'
-						"
-						class="btn btn-critical"
-						@click="cancelReservation(reservation.id_reserva)"
-					>
-						Cancelar Reserva
-					</button>
-					<div
-						v-if="
-							reservation.estado === 'Cancelada' && reservation.penalizacion > 0
-						"
-						class="penalty-note"
-					>
-						Se aplicó penalización por cancelación tardía
+				<div class="reservation-body">
+					<div class="dates">
+						<div class="date-item">
+							<strong>Check-in:</strong>
+							<span>{{ formatDate(reserva.fecha_inicio) }}</span>
+						</div>
+						<div class="date-item">
+							<strong>Check-out:</strong>
+							<span>{{ formatDate(reserva.fecha_fin) }}</span>
+						</div>
+						<div class="date-item">
+							<strong>Huéspedes:</strong>
+							<span>{{ reserva.num_huespedes }} personas</span>
+						</div>
+					</div>
+
+					<div class="payment-info">
+						<div class="total-amount">
+							<strong>Total:</strong>
+							<span>{{ formatCurrency(reserva.costo_total) }}</span>
+						</div>
+						<div v-if="reserva.facturas" class="payment-status">
+							<strong>Estado pago:</strong>
+							<span :class="getEstadoPagoColor(reserva.facturas.estado_pago)">
+								{{ reserva.facturas.estado_pago }}
+							</span>
+						</div>
+					</div>
+
+					<div class="reservation-actions">
+						<button 
+							v-if="reserva.facturas" 
+							class="btn btn-secondary" 
+							@click="viewInvoice(reserva)"
+						>
+							📄 Ver Factura
+						</button>
 					</div>
 				</div>
 			</div>
 		</div>
+
+		<!-- Modal de factura -->
+		<Modal 
+			v-model="showModal" 
+			:title="`Factura electrónica`"
+			@close="closeModal"
+		>
+		<InvoiceGuest
+			v-if="selectedReserva"
+			:factura="selectedFactura"
+			:reserva="selectedReserva"
+		/>
+
+		</Modal>
 	</div>
 </template>
 
@@ -281,19 +228,15 @@ onMounted(() => {
 	margin: 0 auto;
 }
 
-.reservations-header {
+.dashboard-header {
 	text-align: center;
 	margin-bottom: 2rem;
 }
 
-.reservations-header h2 {
+.dashboard-header h2 {
 	font-size: 2rem;
-	color: #2c3e50;
 	margin-bottom: 0.5rem;
-}
-
-.subtitle {
-	color: #7f8c8d;
+	color: var(--text-h);
 }
 
 .reservations-list {
@@ -305,130 +248,123 @@ onMounted(() => {
 .reservation-card {
 	background: white;
 	border-radius: 12px;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 	overflow: hidden;
+	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 	transition: transform 0.3s ease;
 }
 
 .reservation-card:hover {
 	transform: translateY(-2px);
-	box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+	box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
 }
 
 .reservation-header {
-	background: #f8f9fa;
-	padding: 1.5rem;
-	border-bottom: 1px solid #e9ecef;
+	background: var(--azul-oscuro);
+	padding: 1rem 1.5rem;
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	flex-wrap: wrap;
-	gap: 1rem;
+	color: white;
 }
 
-.room-info h3 {
-	margin: 0 0 0.25rem 0;
-	color: #2c3e50;
-}
-
-.room-type {
-	color: #7f8c8d;
-	font-size: 0.875rem;
-}
-
-.status-badge {
-	padding: 0.5rem 1rem;
-	border-radius: 20px;
-	font-weight: 600;
-	font-size: 0.875rem;
-}
-
-.status-pending {
-	background: #fff3cd;
-	color: #856404;
-}
-
-.status-confirmed {
-	background: #d4edda;
-	color: #155724;
-}
-
-.status-cancelled {
-	background: #f8d7da;
-	color: #721c24;
-}
-
-.status-completed {
-	background: #d1ecf1;
-	color: #0c5460;
-}
-
-.status-no-show {
-	background: #e2e3e5;
-	color: #383d41;
-}
-
-.reservation-details {
-	padding: 1.5rem;
-}
-
-.detail-row {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-	gap: 1.5rem;
-	margin-bottom: 1rem;
-}
-
-.detail-item {
+.room-info {
 	display: flex;
-	gap: 0.75rem;
-	align-items: flex-start;
+	gap: 1rem;
+	align-items: baseline;
 }
 
-.detail-icon {
+.room-number {
 	font-size: 1.25rem;
-}
-
-.detail-label {
-	font-size: 0.75rem;
-	color: #7f8c8d;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.detail-value {
-	font-size: 1rem;
-	color: #2c3e50;
-	font-weight: 500;
-	margin-top: 0.25rem;
-}
-
-.price {
-	color: #27ae60;
 	font-weight: bold;
 }
 
-.penalty {
-	color: #e74c3c;
+.room-type {
+	font-size: 0.875rem;
+	opacity: 0.9;
 }
 
-.observaciones {
+.status-badge {
+	padding: 0.25rem 0.75rem;
+	border-radius: 20px;
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.status-pending {
+	background: #f39c12;
+	color: white;
+}
+
+.status-confirmed {
+	background: #27ae60;
+	color: white;
+}
+
+.status-cancelled {
+	background: #e74c3c;
+	color: white;
+}
+
+.status-completed {
+	background: #3498db;
+	color: white;
+}
+
+.status-paid {
+	background: #27ae60;
+	color: white;
+}
+
+.status-refunded {
+	background: #95a5a6;
+	color: white;
+}
+
+.reservation-body {
+	padding: 1.5rem;
+}
+
+.dates {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 1rem;
+	margin-bottom: 1.5rem;
+}
+
+.date-item {
 	display: flex;
-	gap: 0.75rem;
-	margin-top: 1rem;
-	padding-top: 1rem;
-	border-top: 1px solid #e9ecef;
+	justify-content: space-between;
+	padding: 0.5rem;
+	background: #f8f9fa;
+	border-radius: 8px;
 }
 
-.reservation-footer {
-	padding: 1rem 1.5rem 1.5rem;
-	border-top: 1px solid #e9ecef;
+.payment-info {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 1.5rem;
+	padding: 1rem;
+	background: #f8f9fa;
+	border-radius: 8px;
 }
 
-.penalty-note {
-	margin-top: 0.5rem;
-	font-size: 0.75rem;
-	color: #e74c3c;
+.total-amount span {
+	font-size: 1.25rem;
+	font-weight: bold;
+	color: var(--verde);
+}
+
+.payment-status span {
+	padding: 0.25rem 0.75rem;
+	border-radius: 20px;
+	font-size: 0.875rem;
+	font-weight: 500;
+}
+
+.reservation-actions {
+	display: flex;
+	justify-content: flex-end;
 }
 
 .loading {
@@ -438,7 +374,7 @@ onMounted(() => {
 
 .spinner {
 	border: 3px solid #f3f3f3;
-	border-top: 3px solid #667eea;
+	border-top: 3px solid var(--azul-principal);
 	border-radius: 50%;
 	width: 40px;
 	height: 40px;
