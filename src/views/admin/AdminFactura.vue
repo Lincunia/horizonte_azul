@@ -217,10 +217,9 @@ onMounted(() => {
 					<td>{{ factura.estado_pago }}</td>
 					<td class="actions-cell">
 						<button class="btn" @click="openEditModal(factura)">✏️</button>
+						<button class="btn" @click="exportarFactura(factura)">PDF</button>
 					</td>
-                    <button class="btn" @click="exportarFactura(factura)">
-                        PDF
-                    </button>
+                    
 				</tr>
 				<tr v-if="!filteredFacturas.length && !loading">
 					<td colspan="9">No se encontraron facturas.</td>
