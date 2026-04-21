@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
@@ -7,179 +7,238 @@ import ToastMessage from "../../components/ToastMessage.vue";
 
 const router = useRouter();
 
-const habitaciones = ref([
-	{ numero: 101, tipo: "Individual", estado: "Disponible", precio: 100000 },
-	{ numero: 203, tipo: "Doble", estado: "Ocupada", precio: 180000 },
-]);
+const habitaciones = ref<any[]>([]);
+
+const reservas = ref<any[]>([]);
 
 const filtroTexto = ref("");
+
 const filtroEstado = ref("");
+
+const reservaEditando = ref<string | null>(null);
+
+const nuevaReserva = ref({
+	cliente: "",
+	id_habitacion: null as number | null,
+	fecha_inicio: "",
+	fecha_fin: "",
+	num_huespedes: 1,
+	estado: "pendiente",
+	fecha_reserva: new Date().toISOString(),
+	check_in: null as string | null,
+	check_out: null as string | null,
+	costo_total: 0,
+	penalizacion: 0,
+	observaciones: "",
+	auth_id_usuario: null as string | null
+});
 
 const hoy = new Date().toISOString().split("T")[0];
 
-const habitacionesFiltradas = computed(() => {
-	return habitaciones.value
-		.map((h) => {
-			const ocupada = reservas.value.some(
-				(r) =>
-					r.habitacion == h.numero &&
-					r.estado !== "Cancelada" &&
-					hoy >= r.entrada &&
-					hoy < r.salida,
+const cargarHabitaciones = async () => {
+	const { data, error } = await supabase
+		.from("habitaciones")
+		.select("*");
+
+	if (error) {
+		console.error("Error cargando habitaciones:", error);
+		return;
+	}
+
+	habitaciones.value = data || [];
+};
+
+const cargarReservas = async () => {
+	const { data , error } = await supabase
+	.from("reservas")
+	.select("*");
+
+	if (error) {
+		console.error("Error cargando reservas:", error);
+		return;
+	}
+
+	reservas.value = (data || []).map((r) => {
+		const habitacion = habitaciones.value.find(
+				(h) => Number(h.id_habitacion) === Number(r.id_habitacion)
 			);
 
 			return {
-				...h,
-				estado: ocupada ? "Ocupada" : "Disponible",
+				id: r.id_reserva,
+				cliente: r.cliente,
+				habitacionId: r.id_habitacion,
+				habitacion: habitacion ? habitacion.numero : `#${r.id_habitacion}`,
+				entrada: r.fecha_inicio,
+				salida: r.fecha_fin,
+				estado: r.estado,
+				num_huespedes: r.num_huespedes
+			};
+		});
+};
+
+onMounted(async () => {
+	await cargarHabitaciones();
+	await cargarReservas();
+});
+
+const habitacionesFiltradas = computed(() => {
+	const hoyDate = new Date(hoy);
+
+	return habitaciones.value
+		.map((h) => {
+			const ocupada = reservas.value.some((r) => {
+				const inicio = new Date(r.entrada);
+				const fin = new Date(r.salida);
+
+					r.habitacionId === h.id_habitacion &&
+					r.estado !== "Cancelada" &&
+					r.estado !== "Completada" &&
+					hoyDate >= inicio &&
+					hoyDate < fin
+		});
+
+		return {
+			...h,
+			estado: ocupada ? "Ocupada" : "Disponible"
 			};
 		})
 		.filter((h) => {
+			const texto = filtroTexto.value.toLowerCase();
+
 			return (
-				(h.numero.toString().includes(filtroTexto.value) ||
-					h.tipo.toLowerCase().includes(filtroTexto.value.toLowerCase())) &&
+				(h.numero.toString().includes(texto) ||
+					h.tipo.toLowerCase().includes(texto)) &&
 				(filtroEstado.value === "" || h.estado === filtroEstado.value)
 			);
 		});
 });
 
-const reservas = ref([
-	{
-		id: 1,
-		cliente: "Juan Pérez",
-		habitacion: 101,
-		entrada: "2026-04-15",
-		salida: "2026-04-18",
-		estado: "Activa",
-	},
-]);
+const hayConflicto = (
+	habitacion: number, 
+	entrada: string, 
+	salida: string
+) => {
 
-const nuevaReserva = ref({
-	cliente: "",
-	habitacion: "",
-	entrada: "",
-	salida: "",
-});
+	if (!entrada || !salida) return false;
+	
+	const fechaEntrada = new Date(entrada);
+	const fechaSalida = new Date(salida);
 
-const hayConflicto = (habitacion: number, entrada: string, salida: string) => {
+	const estadosActivos = ["Pendiente", "Confirmada", "Check-in"];
+
 	return reservas.value.some((r) => {
+		
+		const inicio = new Date(r.entrada);
+		const fin = new Date(r.salida);
+
 		return (
-			r.habitacion == habitacion &&
-			r.estado !== "Cancelada" &&
-			((entrada >= r.entrada && entrada < r.salida) ||
-				(salida > r.entrada && salida <= r.salida) ||
-				(entrada <= r.entrada && salida >= r.salida))
+			r.habitacionId == habitacion &&
+			estadosActivos.includes(r.estado) &&
+			fechaEntrada < fin &&
+			fechaSalida > inicio
 		);
 	});
 };
 
-const reservaEditando = ref<string | null>(null);
+const crearReserva = async () => {
+	const toast = useToast();
 
-const crearReserva = () => {
+	const reserva = nuevaReserva.value;
+
 	if (
-		!nuevaReserva.value.cliente ||
-		!nuevaReserva.value.habitacion ||
-		!nuevaReserva.value.entrada ||
-		!nuevaReserva.value.salida
+		!reserva.cliente ||
+		reserva.id_habitacion === null ||
+		!reserva.fecha_inicio ||
+		!reserva.fecha_fin
 	) {
-		useToast().showMessage("error", "Completa todos los campos");
+		toast.showMessage("error", "Completa todos los campos");
 		return;
 	}
 
 	if (
 		hayConflicto(
-			Number(nuevaReserva.value.habitacion),
-			nuevaReserva.value.entrada,
-			nuevaReserva.value.salida,
+			Number(reserva.id_habitacion),
+			reserva.fecha_inicio,
+			reserva.fecha_fin
 		)
 	) {
-		useToast().showMessage(
-			"error",
-			"La habitación ya está reservada en esas fechas",
-		);
+		toast.showMessage("error", "La habitación ya está reservada");
 		return;
 	}
 
 	if (reservaEditando.value) {
-		const reserva = reservas.value.find((r) => r.id === reservaEditando.value);
+		const { error } = await supabase
+			.from("reservas")
+			.update({
+				cliente: reserva.cliente,
+				id_habitacion: Number(reserva.id_habitacion),
+				fecha_inicio: reserva.fecha_inicio,
+				fecha_fin: reserva.fecha_fin,
+				num_huespedes: reserva.num_huespedes
+			})
+			.eq("id_reserva", Number(reservaEditando.value));
 
-		if (!reserva || reserva.estado === "Cancelada") {
-			reservaEditando.value = null;
-		} else {
-			if (reserva.estado === "Finalizada") {
-				useToast().showMessage("error", "No se puede modificar esta reserva");
-				return;
-			}
-
-			reserva.cliente = nuevaReserva.value.cliente;
-			reserva.habitacion = Number(nuevaReserva.value.habitacion);
-			reserva.entrada = nuevaReserva.value.entrada;
-			reserva.salida = nuevaReserva.value.salida;
-
-			useToast().showMessage("success", "Reserva actualizada");
-
-			reservaEditando.value = null;
-
-			nuevaReserva.value = {
-				cliente: "",
-				habitacion: "",
-				entrada: "",
-				salida: "",
-			};
-
+		if (error) {
+			toast.showMessage("error", "Error al actualizar");
 			return;
 		}
-	}
 
-	const existe = reservas.value.some(
-		(r) =>
-			r.cliente === nuevaReserva.value.cliente &&
-			r.habitacion == nuevaReserva.value.habitacion &&
-			r.entrada === nuevaReserva.value.entrada &&
-			r.salida === nuevaReserva.value.salida &&
-			r.estado !== "Cancelada",
-	);
+		toast.showMessage("success", "Reserva actualizada");
 
-	if (existe) {
-		useToast().showMessage("error", "Esta reserva ya existe");
+		reservaEditando.value = null;
+		await cargarReservas();
+		resetForm();
 		return;
 	}
 
-	reservas.value.push({
-		id: crypto.randomUUID(),
-		cliente: nuevaReserva.value.cliente,
-		habitacion: Number(nuevaReserva.value.habitacion),
-		entrada: nuevaReserva.value.entrada,
-		salida: nuevaReserva.value.salida,
-		estado: "Activa",
+	const existe = reservas.value.some((r) => {
+		return(
+			r.habitacionId === Number(reserva.id_habitacion) &&
+			r.entrada === reserva.fecha_inicio &&
+			r.salida === reserva.fecha_fin &&
+			["Pendiente", "Confirmada", "Check-in"].includes(r.estado)
+		)
 	});
 
-	useToast().showMessage("success", "Reserva creada");
-
-	nuevaReserva.value = {
-		cliente: "",
-		habitacion: "",
-		entrada: "",
-		salida: "",
-	};
-};
-
-const cancelarReserva = (id: string) => {
-	const reserva = reservas.value.find((r) => r.id === id);
-
-	if (!reserva || reserva.estado === "Cancelada") return;
-
-	reserva.estado = "Cancelada";
-
-	if (reservaEditando.value === id) {
-		reservaEditando.value = null;
-
-		nuevaReserva.value = {
-			cliente: "",
-			habitacion: "",
-			entrada: "",
-			salida: "",
-		};
+	if (existe) {
+		toast.showMessage("error", "Esta reserva ya existe");
+		return;
 	}
+
+	const { data: userData, error: userError } =
+		await supabase.auth.getUser();
+
+	if (userError) {
+		toast.showMessage("error", "Error obteniendo usuario");
+		return;
+	}
+
+	const { error } = await supabase.from("reservas").insert([
+		{
+			cliente: reserva.cliente,
+			id_habitacion: Number(reserva.id_habitacion),
+			fecha_inicio: reserva.fecha_inicio,
+			fecha_fin: reserva.fecha_fin,
+			num_huespedes: reserva.num_huespedes,
+			estado: "Confirmada",
+			fecha_reserva: new Date().toISOString(),
+			auth_id_usuario: userData?.user?.id,
+			check_in: null,
+			check_out: null,
+			costo_total: 0,
+			penalizacion: 0,
+			observaciones: ""
+		}
+	]);
+
+	if (error) {
+		toast.showMessage("error", error.message);
+		return;
+	}
+
+	await cargarReservas();
+	toast.showMessage("success", "Reserva creada");
+	resetForm();
 };
 
 const modificarReserva = (reserva: any) => {
@@ -187,195 +246,422 @@ const modificarReserva = (reserva: any) => {
 
 	nuevaReserva.value = {
 		cliente: reserva.cliente,
-		habitacion: reserva.habitacion,
-		entrada: reserva.entrada,
-		salida: reserva.salida,
+		id_habitacion: reserva.habitacionId,
+		fecha_inicio: reserva.entrada,
+		fecha_fin: reserva.salida,
+		num_huespedes: reserva.num_huespedes || 1,
+		estado: reserva.estado || "Confirmada",
+		fecha_reserva: new Date().toString(),
+		check_in: null,
+		check_out: null,
+		costo_total: 0,
+		penalizacion: 0,
+		observaciones: "",
+		auth_id_usuario: null
 	};
 };
 
-const checkIn = (reserva: any) => {
-	if (reserva.estado !== "Activa") {
-		useToast().showMessage("error", "No se puede hacer check-in");
+const cancelarReserva = async (id: number) => {
+	
+	const toast = useToast();
+
+	const { error } = await supabase
+		.from("reservas")
+		.update({ estado: "Cancelada" })
+		.eq("id_reserva", id);
+
+	if (error) {
+		toast.showMessage("error", "Error al cancelar la reserva");
 		return;
 	}
 
-	reserva.estado = "Ocupada";
+	await cargarReservas();
+	toast.showMessage("success", "Reserva cancelada");
 };
 
-const checkOut = (reserva: any) => {
-	if (reserva.estado !== "Ocupada") {
-		useToast().showMessage("error", "No se puede hacer check-out");
+const resetForm = () => {
+	nuevaReserva.value = {
+		cliente: "",
+		id_habitacion: null,
+		fecha_inicio: "",
+		fecha_fin: "",
+		num_huespedes: 1,
+		estado: "Confirmada",
+		fecha_reserva: new Date().toString(),
+		check_in: null,
+		check_out: null,
+		costo_total: 0,
+		penalizacion: 0,
+		observaciones: "",
+		auth_id_usuario: null	
+	};
+};
+
+const checkIn = async (reserva: any) => {
+	const toast = useToast();
+
+	if (reserva.estado !== "Confirmada") {
+		toast.showMessage("error", "Solo reservas confirmadas pueden hacer check-in");
 		return;
 	}
 
-	reserva.estado = "Finalizada";
-};
+	const hoyDate = new Date();
+	const entrada = new Date(reserva.entrada);
 
-const calcularDias = (entrada: string, salida: string) => {
-	const inicio = new Date(entrada);
-	const fin = new Date(salida);
-	const diff = (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24);
-	return diff || 1;
-};
-
-const generarFactura = (reserva: any) => {
-	const habitacion = habitaciones.value.find(
-		(h) => h.numero == reserva.habitacion,
-	);
-
-	if (!habitacion) {
-		alert("Habitación no encontrada");
+	if (hoyDate < entrada) {
+		toast.showMessage("error", "Aún no es la fecha de entrada");
 		return;
 	}
 
-	const dias = calcularDias(reserva.entrada, reserva.salida);
-	const total = dias * habitacion.precio;
+	const { error } = await supabase
+		.from("reservas")
+		.update({ 
+			estado: "Check-in",
+			check_in: new Date().toISOString()
+		})
+		.eq("id_reserva", reserva.id);
 
-	alert(`
-    FACTURA
-    ------------------------
-    Cliente: ${reserva.cliente}
-    Habitación: ${reserva.habitacion}
-    Días: ${dias}
-    Precio por noche: $${habitacion.precio}
-    TOTAL: $${total}
-  `);
+	if (error) {
+		toast.showMessage("error", "Error en check-in");
+		return;
+	}
+
+	toast.showMessage("success", "Check-in realizado");
+	await cargarReservas();
+};
+
+const checkOut = async (reserva: any) => {
+	const toast = useToast();
+
+	if (reserva.estado !== "Check-in") {
+		toast.showMessage("error", "La reserva no está en curso");
+		return;
+	}
+
+	const ahora = new Date();
+	const entrada = new Date(reserva.entrada);
+
+	const diffTiempo = ahora.getTime() - entrada.getTime();
+	const noches = Math.ceil(diffTiempo / (1000 * 60 * 60 * 24));
+
+	const precioPorNoche = 100;
+	const costoTotal = noches * precioPorNoche;
+
+	const { error } = await supabase
+		.from("reservas")
+		.update({ 
+			estado: "Completada",
+			check_out: ahora.toISOString(),
+			costo_total: costoTotal 
+		})
+		.eq("id_reserva", reserva.id);
+
+
+	if (error) {
+		console.error(error);
+		toast.showMessage("error", "Error en check-out");
+		return;
+	}
+
+	toast.showMessage("success", "Check-out realizado correctamente");
+
+	await cargarReservas();
 };
 
 const handleLogout = async () => {
+	const toast = useToast();
+
 	const { error } = await supabase.auth.signOut();
+
 	if (error) {
-		console.error("Error al cerrar sesión:", error);
-		useToast().showMessage("error", "Error al cerrar sesión");
-	} else {
-		setTimeout(() => {
-			router.push("/login");
-		}, 1500);
+		toast.showMessage("error", "Error al cerrar sesión");
+		return;
 	}
+
+	reservas.value = [];
+	habitaciones.value = [];
+
+	toast.showMessage("success", "Sesión cerrada correctamente");
+
+	router.push("/login");
 };
+
+const generarFactura = (reserva: any) => {
+	const toast = useToast();
+
+	const habitacion = habitaciones.value.find(
+		(h) =>
+			Number(h.id_habitacion) === Number(reserva.habitacionId)
+	);
+
+	if (!habitacion) {
+		toast.showMessage("error", "Habitación no encontrada");
+		return;
+	}
+
+	const inicio = new Date(reserva.check_in || reserva.entrada);
+	const fin = new Date(reserva.check_out || reserva.salida);
+
+	if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
+		useToast().showMessage("error", "Fechas inválidas");
+		return;
+	}
+
+	let dias = Math.ceil(
+		(fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24)
+	);
+
+	if (dias <= 0) dias = 1;
+
+	const precio = Number(habitacion.precio) || 0;
+	const total = dias * precio;
+
+	const factura = `
+FACTURA HOTEL
+
+Cliente: ${reserva.cliente}
+Habitación: ${habitacion.numero}
+Fecha entrada: ${inicio.toLocaleDateString()}
+Fecha salida: ${fin.toLocaleDateString()}
+
+Días: ${dias}
+Precio por noche: $${precio}
+
+TOTAL: $${total}
+`;
+
+	alert(factura);
+};
+
+const reservasFiltradasOperativas = computed(() => {
+	return reservas.value.filter(
+		(r) => r.estado === "Confirmada" || r.estado === "Check-in"
+	);
+});
+
 </script>
 
-<template>
+<template>	
 	<div class="recepcion-container">
-		<h1>Panel de Recepcionista</h1>
+		<header class="top-bar">
+			<h1>Panel de Recepcionista</h1>
 
-		<button class="btn btn-critical" @click="handleLogout">
-			Cerrar Sesión
-		</button>
-		<ToastMessage />
-		<section>
-			<h2>Buscar Habitaciones</h2>
+			<button class="btn btn-critical" @click="handleLogout">
+				Cerrar Sesión
+			</button>
+			
+		</header>	
 
-			<div>
+		<div class="grid-main">
+			<section class="panel">
+				<h2>Buscar Habitaciones</h2>
+
 				<input
 					v-model="filtroTexto"
 					type="text"
 					placeholder="Número o tipo de habitación"
 				/>
+
 				<select v-model="filtroEstado">
 					<option value="">Estado</option>
 					<option>Disponible</option>
 					<option>Ocupada</option>
 					<option>Mantenimiento</option>
 				</select>
-				<button>Buscar</button>
-			</div>
 
-			<table>
-				<thead>
-					<tr>
-						<th>Habitación</th>
-						<th>Tipo</th>
-						<th>Estado</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="h in habitacionesFiltradas" :key="h.numero">
-						<td>{{ h.numero }}</td>
-						<td>{{ h.tipo }}</td>
-						<td>{{ h.estado }}</td>
-					</tr>
-				</tbody>
-			</table>
-		</section>
+				<table>
+					<thead>
+						<tr>
+							<th>Habitación</th>
+							<th>Tipo</th>
+							<th>Estado</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr 
+							v-for="h in habitacionesFiltradas" 
+							:key="h.id_habitacion"
+						>
+							<td>{{ h.numero }}</td>
+							<td>{{ h.tipo }}</td>
 
-		<section>
-			<h2>Gestión de Reservas</h2>
+							<td>
+								<span 
+									:class="{
+										estado: true,
+										disponible: h.estado === 'Disponible',
+										ocpada: h.estado === 'Ocupada',
+										mantenimiento: h.estado === 'Mantenimiento',
+									}"
+								>
+									{{ h.estado }}
+								</span>
+							</td>
+						</tr>
+						<tr v-if="habitacionesFiltradas.length === 0">
+							<td colspan="3">No hay habitaciones disponibles</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
 
-			<div>
-				<input
-					v-model="nuevaReserva.cliente"
-					type="text"
-					placeholder="Nombre del cliente"
-				/>
-				<input v-model="nuevaReserva.entrada" type="date" />
-				<input v-model="nuevaReserva.salida" type="date" />
-				<select v-model="nuevaReserva.habitacion">
-					<option disabled value="">Habitación</option>
-					<option v-for="h in habitaciones" :key="h.numero" :value="h.numero">
-						{{ h.numero }}
-					</option>
-				</select>
+			<section class="panel">
+				<h2>Gestión de Reservas</h2>
 
-				<button @click="crearReserva">
-					{{ reservaEditando ? "Actualizar Reserva" : "Crear Reserva" }}
-				</button>
-			</div>
+				<div class="form-reserva">
+					<input
+						v-model="nuevaReserva.cliente"
+						type="text"
+						placeholder="Nombre del cliente"
+					/>
 
-			<table>
-				<thead>
-					<tr>
-						<th>Cliente</th>
-						<th>Habitación</th>
-						<th>Entrada</th>
-						<th>Salida</th>
-						<th>Estado</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="reserva in reservas" :key="reserva.id">
-						<td>{{ reserva.cliente }}</td>
-						<td>{{ reserva.habitacion }}</td>
-						<td>{{ reserva.entrada }}</td>
-						<td>{{ reserva.salida }}</td>
-						<td>{{ reserva.estado }}</td>
-						<td>
-							<button @click="modificarReserva(reserva)">Modificar</button>
-							<button @click="cancelarReserva(reserva.id)">Cancelar</button>
-							<button @click="generarFactura(reserva)">Facturar</button>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		</section>
+					<input v-model="nuevaReserva.fecha_inicio" type="date" />
+					<input v-model="nuevaReserva.fecha_fin" type="date" />
 
-		<section>
-			<h2>Check-in / Check-out</h2>
+					<input
+						v-model.number="nuevaReserva.num_huespedes"
+						type="number"
+						min="1"
+						placeholder="Número de huéspedes"
+					/>
 
-			<table>
-				<tbody>
-					<tr v-for="reserva in reservas" :key="reserva.id">
-						<td>{{ reserva.cliente }}</td>
-						<td>{{ reserva.habitacion }}</td>
-						<td>{{ reserva.entrada }}</td>
-						<td>{{ reserva.salida }}</td>
-						<td>
-							<button
-								@click="checkIn(reserva)"
-								:disabled="reserva.estado !== 'Activa'"
-							>
-								Check-in
-							</button>
-							<button
-								@click="checkOut(reserva)"
-								:disabled="reserva.estado !== 'Ocupada'"
-							>
-								Check-out
-							</button>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		</section>
+					<select v-model="nuevaReserva.id_habitacion">
+						<option disabled :value="null">Habitación</option>
+
+						<option 
+							v-for="h in habitacionesFiltradas.filter(h => h.estado === 'Disponible')"
+							:key="h.id_habitacion"
+							:value="h.id_habitacion"
+						>
+							{{ h.numero }}
+						</option>
+					</select>
+
+					<button @click="crearReserva">
+						{{ reservaEditando ? "Actualizar Reserva" : "Crear Reserva" }}
+					</button>
+
+					<button v-if="reservaEditando" @click="resetForm">
+						Cancelar edición
+					</button>
+				</div>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Cliente</th>
+							<th>Habitación</th>
+							<th>Entrada</th>
+							<th>Salida</th>
+							<th>Estado</th>
+							<th>Acciones</th>
+						</tr>
+					</thead>
+				
+					<tbody>
+						<tr v-for="reserva in reservas" :key="reserva.id">
+							<td>{{ reserva.cliente }}</td>
+							<td>{{ reserva.habitacion }}</td>
+							<td>{{ reserva.entrada }}</td>
+							<td>{{ reserva.salida }}</td>
+
+							<td>
+								<span 
+									:class = "{
+										estado: true,
+										confirmada: reserva.estado === 'Confirmada',
+										checkin: reserva.estado === 'Check-in',
+										completada: reserva.estado === 'Completada',
+										cancelada: reserva.estado === 'Cancelada'
+									}"
+								>
+									{{ reserva.estado }}
+								</span>
+							</td>
+
+							<td>
+								<button @click="modificarReserva(reserva)">
+									Modificar
+								</button>
+							
+								<button @click="cancelarReserva(reserva.id)">
+									Cancelar
+								</button>
+							
+								<button @click="generarFactura(reserva)">
+									Facturar
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+		</div>
+
+		<div class="check-container">
+			<section class="panel operativo">
+				<h2>Check-in / Check-out</h2>
+
+				<table>
+					<thead>
+						<tr>
+							<th>Cliente</th>
+							<th>Habitación</th>
+							<th>Entrada</th>
+							<th>Salida</th>
+							<th>Estado</th>
+							<th>Acción</th>
+						</tr>
+					</thead>
+						
+					<tbody>
+						<tr
+							v-for="reserva in reservasFiltradasOperativas"
+							:key="reserva.id"
+						>
+							<td>{{ reserva.cliente }}</td>
+							<td>{{ reserva.habitacion }}</td>
+							<td>{{ reserva.entrada }}</td>
+							<td>{{ reserva.salida }}</td>
+
+							<td>
+								<span
+									:class="{
+										estado: true,
+										confirmada: reserva.estado === 'Confirmada',
+										checkin: reserva.estado === 'Check-in'
+									}"
+								>
+									{{ reserva.estado }}
+								</span>
+							</td>
+						
+							<td>
+
+								<button
+									v-if="reserva.estado === 'Confirmada'"
+									@click="checkIn(reserva)"
+									class="btn-checkin"
+								>
+									Check-in
+								</button>
+							
+								<button
+									v-else-if="reserva.estado === 'Check-in'"
+									@click="checkOut(reserva)"
+									class="btn-checkout"
+								>
+									Check-out
+								</button>
+							</td>
+						</tr>
+
+						<tr v-if="reservasFiltradasOperativas.length === 0">
+							<td colspan="6">No hay operaciones pendientes</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+		</div>
 	</div>
 </template>
