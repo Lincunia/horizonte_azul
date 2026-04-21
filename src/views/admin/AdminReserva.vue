@@ -32,11 +32,20 @@ interface User {
 	nombre: string;
 	email: string;
 }
-
+interface Factura {
+	
+	subtotal: number;
+	impuestos: number;
+	total: number;
+	metodo_pago: "Efectivo" | "Tarjeta débito" | "Tarjeta crédito" | "Transferencia";
+	estado_pago: "Pagada" | "Pendiente" | "Cancelada";
+	id_reserva: number;
+}
 // Estado
 const reservas = ref<Reserva[]>([]);
 const habitaciones = ref<Habitacion[]>([]);
 const users = ref<User[]>([]);
+const facturas = ref<Factura[]>([]);
 const showEditReservaModal = ref(false);
 const showCreateReservaModal = ref(false);
 const editingReserva = ref<Reserva | null>(null);
@@ -52,7 +61,14 @@ const reservaForm = ref({
 	estado: "Pendiente" as "Pendiente" | "Confirmada" | "Cancelada",
 	observaciones: "",
 });
-
+const facturaForm = ref({
+	subtotal: 0,
+	impuestos: 0,
+	total: 0,
+	metodo_pago: "Efectivo" as "Efectivo" | "Tarjeta débito" | "Tarjeta crédito" | "Transferencia",
+	estado_pago: "Pendiente" as "Pagada" | "Pendiente" | "Cancelada",
+	id_reserva: 0,
+});
 const reservaCreateForm = ref({
 	auth_id_usuario: "",
 	id_habitacion: 0,
@@ -231,6 +247,7 @@ const closeCreateReservaModal = () => {
 	};
 };
 
+
 const createReserva = async () => {
 	if (!reservaCreateForm.value.auth_id_usuario || !reservaCreateForm.value.id_habitacion) {
 		useToast().showMessage("error", "Selecciona usuario y habitación");
@@ -249,10 +266,43 @@ const createReserva = async () => {
 			costo_total: reservaCreateForm.value.costo_total,
 			observaciones: reservaCreateForm.value.observaciones,
 		});
-
+		
 		if (error) throw error;
+		try {
+			const { data: newReserva } = await supabase
+				.from("reservas")
+				.select("*")
+				.order("id_reserva", { ascending: false })
+				.limit(1)
+				.single();
 
+			if (newReserva) {
+				const facturaData = {
+					subtotal: reservaCreateForm.value.costo_total / 1.19,
+					impuestos: reservaCreateForm.value.costo_total - (reservaCreateForm.value.costo_total / 1.19),
+					total: reservaCreateForm.value.costo_total,
+					metodo_pago: "Efectivo",
+					estado_pago: "Pendiente",
+					id_reserva: newReserva.id_reserva,
+				};
+
+				const { error: facturaError } = await supabase
+					.from("facturas")
+					.insert(facturaData);
+
+				if (facturaError) throw facturaError;
+			}
+		} catch (facturaError) {
+			console.error("Error al crear factura:", facturaError);
+			useToast().showMessage(
+				"error",
+				facturaError.message || "Reserva creada pero error al crear factura",
+			);
+			return;
+		}
+		//console.log("Reserva creada:", data);
 		useToast().showMessage("success", "Reserva creada exitosamente");
+		
 		closeCreateReservaModal();
 		await loadReservas();
 	} catch (error: any) {
