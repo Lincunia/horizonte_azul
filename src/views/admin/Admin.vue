@@ -5,10 +5,11 @@ import { supabase } from "../../lib/supabaseClient";
 import AdminUsuario from "./AdminUsuario.vue";
 import AdminReserva from "./AdminReserva.vue";
 import AdminHabitacion from "./AdminHabitacion.vue";
+import AdminFactura from "./AdminFactura.vue";
 import ToastMessage from "../../components/ToastMessage.vue";
 
 const router = useRouter();
-const activeTab = ref<"usuarios" | "reservas" | "habitaciones">("usuarios");
+const activeTab = ref<"usuarios" | "reservas" | "habitaciones" | "facturas">("usuarios");
 
 const handleLogout = async () => {
 	const { error } = await supabase.auth.signOut();
@@ -64,6 +65,13 @@ const goToHome = () => {
 			>
 				Habitaciones
 			</button>
+			<button
+				class="tab-button"
+				:class="{ active: activeTab === 'facturas' }"
+				@click="activeTab = 'facturas'"
+			>
+				Facturas
+			</button>
 		</div>
 
 		<!-- Contenido de pestañas -->
@@ -71,6 +79,7 @@ const goToHome = () => {
 			<AdminUsuario v-if="activeTab === 'usuarios'" />
 			<AdminReserva v-if="activeTab === 'reservas'" />
 			<AdminHabitacion v-if="activeTab === 'habitaciones'" />
+			<AdminFactura v-if="activeTab === 'facturas'" />
 		</div>
 	</div>
 </template>
