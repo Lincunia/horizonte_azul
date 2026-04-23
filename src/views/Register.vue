@@ -138,9 +138,9 @@ const checkPendingRegistration = () => {
 
 		if (remainingTime > 0) {
 			pendingUserData = JSON.parse(pendingData);
-			isBlocked.value = true;
 			timeLeft.value = remainingTime;
 			startCountdown();
+			isBlocked.value = true;
 			useToast().showMessage(
 				"info",
 				`Registro pendiente de verificación. Tienes ${remainingTime} segundos para verificar tu correo.`,
@@ -247,7 +247,7 @@ const handleRegister = async (): Promise<void> => {
 
 		registerForm.value = {
 			idType: "CC",
-			idNum: "",
+			idNum: 0,
 			name: "",
 			email: "",
 			phone: "",
@@ -290,13 +290,6 @@ const goToHome = (): void => {
 			<img v-if="logo" :src="logo" class="logo" alt="Logo" />
 
 			<h2>Registro</h2>
-
-			<div v-if="isBlocked" class="info-message">
-				<h3>Verificación pendiente</h3>
-				<p>Se ha enviado un correo de verificación a tu cuenta</p>
-				<p>Tiempo restante: {{ timeLeft }} segundos</p>
-				<p>Revisa tu bandeja de entrada y haz clic en el enlace de verificación</p>
-			</div>
 
 			<form @submit.prevent="handleRegister">
 				<div class="input-group">
@@ -396,7 +389,9 @@ const goToHome = (): void => {
 				</p>
 			</form>
 
+			<div v-if="isBlocked">
 			<ToastMessage />
+			</div>
 
 		</div>
 	</div>

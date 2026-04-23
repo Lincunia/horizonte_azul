@@ -6,7 +6,6 @@ import { useToast } from "../composables/useToast.ts";
 import ToastMessage from "../components/ToastMessage.vue";
 
 const router = useRouter();
-const route = useRoute();
 
 onMounted(async () => {
 	const hashParams = new URLSearchParams(window.location.hash.substring(1));

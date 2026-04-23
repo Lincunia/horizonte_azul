@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, nextTick } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
-import html2pdf from "html2pdf.js";
 import { usePdf } from "../../composables/pdf.ts";
 interface Factura {
 	id_factura: number;

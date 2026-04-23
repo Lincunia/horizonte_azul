@@ -1,7 +1,7 @@
 import { ref, type Ref } from "vue";
 
 export interface ToastMessage {
-	type: "success" | "error";
+	type: "success" | "error" | "info";
 	text: string;
 }
 
@@ -11,7 +11,7 @@ let timeoutId: number | null = null;
 
 export function useToast() {
 	const showMessage = (
-		type: "success" | "error",
+		type: "success" | "error" | "info",
 		text: string,
 		duration: number = 5000,
 	) => {

@@ -452,6 +452,8 @@ const reservasFiltradasOperativas = computed(() => {
 			
 		</header>	
 
+		<ToastMessage />
+
 		<div class="grid-main">
 			<section class="panel">
 				<h2>Buscar Habitaciones</h2>
