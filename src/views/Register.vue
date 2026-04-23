@@ -1,4 +1,7 @@
 <script setup lang="ts">
+/*
+ * Do a Compostable MATAFAKA
+ */
 import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
