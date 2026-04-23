@@ -3,7 +3,7 @@ import { ref, computed, onMounted, nextTick } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import html2pdf from "html2pdf.js";
-
+import { usePdf } from "../../composables/pdf.ts";
 interface Factura {
 	id_factura: number;
 	fecha_emision: string;
@@ -141,29 +141,17 @@ const facturaSeleccionada = ref<Factura | null>(null);
 const pdfRef = ref<HTMLElement | null>(null);
 
 const exportarFactura = async (factura: Factura): Promise<void> => {
-  facturaSeleccionada.value = factura;
 
-  // Esperar a que Vue renderice el DOM
-  await nextTick();
-
-  if (!pdfRef.value) return;
-
-  const opciones = {
-    margin: 0.5,
-    filename: `factura_${factura.id_factura}.pdf`,
-    html2canvas: { scale: 2 },
-    jsPDF: { format: "a4", orientation: "portrait" },
-  };
-
-  html2pdf()
-    .set(opciones)
-    .from(pdfRef.value)
-    .save();
+	facturaSeleccionada.value = factura;
+	await nextTick();
+	usePdf().exportarPdf(`factura_${factura.id_factura}.pdf`, pdfRef.value);
 };
+
 onMounted(() => {
 	loadFacturas();
 	// loadReservas();
 });
+
 </script>
 
 <template>
