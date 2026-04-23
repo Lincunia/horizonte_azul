@@ -10,7 +10,7 @@ const router = useRouter();
 
 interface RegisterForm {
 	idType: "CC" | "CE" | "Pasaporte" | "Otro";
-	idNum: string;
+	idNum: number;
 	name: string;
 	email: string;
 	phone: string;
@@ -21,13 +21,13 @@ interface RegisterForm {
 
 const registerForm = ref<RegisterForm>({
 	idType: "CC",
-	idNum: "123522312",
-	name: "Anastasio",
-	email: "anastasiomurillo76@gmail.com",
-	phone: "3112231056",
+	idNum: 0,
+	name: "",
+	email: "",
+	phone: "",
 	role: "Huesped",
-	password: "bolgerie",
-	confirmPassword: "bolgerie",
+	password: "",
+	confirmPassword: "",
 });
 
 const loading = ref(false);
@@ -218,13 +218,9 @@ const registerUser = async (dataUser: RegisterForm) => {
 
 const handleRegister = async (): Promise<void> => {
 	loading.value = true;
-	let idPattern = /^\d+$/;
 	let phonePattern = /^(\+\d{1,3}[.\s])?\d{1,10}$/;
 
 	try {
-		if (!idPattern.test(registerForm.value.idNum)) {
-			throw new Error("ID no válido");
-		}
 		if (!phonePattern.test(registerForm.value.phone)) {
 			throw new Error("Teléfono no válido");
 		}
