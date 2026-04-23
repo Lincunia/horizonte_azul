@@ -251,6 +251,7 @@ onMounted(() => {
 .btn-nav,
 .btn-today {
 	background: white;
+	color: #000000;
 	border: 1px solid #ddd;
 	padding: 0.5rem 1rem;
 	border-radius: 6px;
@@ -261,10 +262,9 @@ onMounted(() => {
 .btn-nav:hover,
 .btn-today:hover {
 	background: #667eea;
-	color: white;
+	color: rgb(255, 255, 255);
 	border-color: #667eea;
 }
-
 .calendar-month {
 	text-align: center;
 	margin-bottom: 1.5rem;
