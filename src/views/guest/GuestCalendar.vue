@@ -45,7 +45,7 @@ const fetchCalendarEvents = async () => {
 			title: `Hab. ${reserva.habitaciones.numero} - ${reserva.estado === "Confirmada" ? "✓" : "⏳"}`,
 			start: reserva.fecha_inicio,
 			end: reserva.fecha_fin,
-			habitacion_numero: reserva.habitaciones.numero,
+			habitacion_numero: reserva.habitaciones.numero as number,
 			estado: reserva.estado,
 		}));
 	} catch (error) {
@@ -132,8 +132,8 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="guest-calendar">
-		<div class="calendar-header">
+	<main>
+		<header class="dashboard">
 			<div>
 				<h2>📅 Calendario de Reservas</h2>
 				<p class="subtitle">Visualiza tus próximas estadías</p>
@@ -143,7 +143,7 @@ onMounted(() => {
 				<button @click="goToToday" class="btn-today">Hoy</button>
 				<button @click="nextMonth" class="btn-nav">→</button>
 			</div>
-		</div>
+		</header>
 
 		<div class="calendar-month">
 			<h3>
@@ -213,7 +213,7 @@ onMounted(() => {
 				<span>Hoy</span>
 			</div>
 		</div>
-	</div>
+	</main>
 </template>
 
 <style scoped>
@@ -460,4 +460,3 @@ onMounted(() => {
 	}
 }
 </style>
-

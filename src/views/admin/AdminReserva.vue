@@ -32,20 +32,25 @@ interface User {
 	nombre: string;
 	email: string;
 }
+/*
 interface Factura {
-	
 	subtotal: number;
 	impuestos: number;
 	total: number;
-	metodo_pago: "Efectivo" | "Tarjeta débito" | "Tarjeta crédito" | "Transferencia";
+	metodo_pago:
+		| "Efectivo"
+		| "Tarjeta débito"
+		| "Tarjeta crédito"
+		| "Transferencia";
 	estado_pago: "Pagada" | "Pendiente" | "Cancelada";
 	id_reserva: number;
 }
+*/
 // Estado
 const reservas = ref<Reserva[]>([]);
 const habitaciones = ref<Habitacion[]>([]);
 const users = ref<User[]>([]);
-const facturas = ref<Factura[]>([]);
+//const facturas = ref<Factura[]>([]);
 const showEditReservaModal = ref(false);
 const showCreateReservaModal = ref(false);
 const editingReserva = ref<Reserva | null>(null);
@@ -61,6 +66,7 @@ const reservaForm = ref({
 	estado: "Pendiente" as "Pendiente" | "Confirmada" | "Cancelada",
 	observaciones: "",
 });
+/*
 const facturaForm = ref({
 	subtotal: 0,
 	impuestos: 0,
@@ -69,6 +75,7 @@ const facturaForm = ref({
 	estado_pago: "Pendiente" as "Pagada" | "Pendiente" | "Cancelada",
 	id_reserva: 0,
 });
+*/
 const reservaCreateForm = ref({
 	auth_id_usuario: "",
 	id_habitacion: 0,
@@ -83,9 +90,13 @@ const reservaCreateForm = ref({
 const filteredReservas = computed(() => {
 	return reservas.value.filter((reserva) => {
 		const matchesSearch = searchTerm.value
-			? reserva.nombre_usuario?.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-			  reserva.email_usuario?.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-			  reserva.id_reserva.toString().includes(searchTerm.value)
+			? reserva.nombre_usuario
+					?.toLowerCase()
+					.includes(searchTerm.value.toLowerCase()) ||
+				reserva.email_usuario
+					?.toLowerCase()
+					.includes(searchTerm.value.toLowerCase()) ||
+				reserva.id_reserva.toString().includes(searchTerm.value)
 			: true;
 
 		const matchesEstado =
@@ -141,9 +152,7 @@ const loadReservas = async () => {
 
 const loadHabitaciones = async () => {
 	try {
-		const { data, error } = await supabase
-			.from("habitaciones")
-			.select("*");
+		const { data, error } = await supabase.from("habitaciones").select("*");
 		if (error) throw error;
 		habitaciones.value = data || [];
 	} catch (error: any) {
@@ -167,8 +176,8 @@ const openEditReservaModal = (reserva: Reserva) => {
 	editingReserva.value = reserva;
 	reservaForm.value = {
 		id_habitacion: reserva.id_habitacion,
-		fecha_inicio: reserva.fecha_inicio.split('T')[0], // Para input date
-		fecha_fin: reserva.fecha_fin.split('T')[0],
+		fecha_inicio: reserva.fecha_inicio.split("T")[0], // Para input date
+		fecha_fin: reserva.fecha_fin.split("T")[0],
 		num_huespedes: reserva.num_huespedes,
 		estado: reserva.estado,
 		observaciones: reserva.observaciones,
@@ -223,7 +232,8 @@ const openCreateReservaModal = () => {
 	showCreateReservaModal.value = true;
 	reservaCreateForm.value = {
 		auth_id_usuario: users.value.length > 0 ? users.value[0].auth_id : "",
-		id_habitacion: habitaciones.value.length > 0 ? habitaciones.value[0].id_habitacion : 0,
+		id_habitacion:
+			habitaciones.value.length > 0 ? habitaciones.value[0].id_habitacion : 0,
 		fecha_inicio: "",
 		fecha_fin: "",
 		num_huespedes: 1,
@@ -247,15 +257,17 @@ const closeCreateReservaModal = () => {
 	};
 };
 
-
 const createReserva = async () => {
-	if (!reservaCreateForm.value.auth_id_usuario || !reservaCreateForm.value.id_habitacion) {
+	if (
+		!reservaCreateForm.value.auth_id_usuario ||
+		!reservaCreateForm.value.id_habitacion
+	) {
 		useToast().showMessage("error", "Selecciona usuario y habitación");
 		return;
 	}
 
 	try {
-		const { error } = await supabase.from("reservas").insert({
+		const { error: reservasError } = await supabase.from("reservas").insert({
 			auth_id_usuario: reservaCreateForm.value.auth_id_usuario,
 			id_habitacion: reservaCreateForm.value.id_habitacion,
 			fecha_reserva: new Date().toISOString(),
@@ -266,8 +278,8 @@ const createReserva = async () => {
 			costo_total: reservaCreateForm.value.costo_total,
 			observaciones: reservaCreateForm.value.observaciones,
 		});
-		
-		if (error) throw error;
+
+		if (reservasError) throw reservasError;
 		try {
 			const { data: newReserva } = await supabase
 				.from("reservas")
@@ -279,7 +291,9 @@ const createReserva = async () => {
 			if (newReserva) {
 				const facturaData = {
 					subtotal: reservaCreateForm.value.costo_total / 1.19,
-					impuestos: reservaCreateForm.value.costo_total - (reservaCreateForm.value.costo_total / 1.19),
+					impuestos:
+						reservaCreateForm.value.costo_total -
+						reservaCreateForm.value.costo_total / 1.19,
 					total: reservaCreateForm.value.costo_total,
 					metodo_pago: "Efectivo",
 					estado_pago: "Pendiente",
@@ -292,17 +306,17 @@ const createReserva = async () => {
 
 				if (facturaError) throw facturaError;
 			}
-		} catch (facturaError) {
-			console.error("Error al crear factura:", facturaError);
+		} catch (error: any) {
+			console.error("Error al crear factura:", error);
 			useToast().showMessage(
 				"error",
-				facturaError.message || "Reserva creada pero error al crear factura",
+				error.message || "Reserva creada pero error al crear factura",
 			);
 			return;
 		}
 		//console.log("Reserva creada:", data);
 		useToast().showMessage("success", "Reserva creada exitosamente");
-		
+
 		closeCreateReservaModal();
 		await loadReservas();
 	} catch (error: any) {
@@ -315,7 +329,11 @@ const createReserva = async () => {
 };
 
 const deleteReserva = async (reserva: Reserva) => {
-	if (!confirm(`¿Estás seguro de que deseas eliminar la reserva ${reserva.id_reserva}?`))
+	if (
+		!confirm(
+			`¿Estás seguro de que deseas eliminar la reserva ${reserva.id_reserva}?`,
+		)
+	)
 		return;
 
 	try {
@@ -353,71 +371,77 @@ onMounted(() => {
 <template>
 	<div>
 		<!-- Controles -->
-	<div class="admin-controls">
-		<button class="btn" @click="openCreateReservaModal">
-			➕ Crear Reserva
-		</button>
-		<div class="filters">
-			<input
-				type="search"
-				v-model="searchTerm"
-				placeholder="Buscar por nombre, email o ID de reserva"
-			/>
-			<select v-model="filterEstado">
-				<option value="todos">Todos los estados</option>
-				<option value="Pendiente">Pendiente</option>
-				<option value="Confirmada">Confirmada</option>
-				<option value="Cancelada">Cancelada</option>
-			</select>
+		<div class="admin-controls">
+			<button class="btn" @click="openCreateReservaModal">
+				➕ Crear Reserva
+			</button>
+			<div class="filters">
+				<input
+					type="search"
+					v-model="searchTerm"
+					placeholder="Buscar por nombre, email o ID de reserva"
+				/>
+				<select v-model="filterEstado">
+					<option value="todos">Todos los estados</option>
+					<option value="Pendiente">Pendiente</option>
+					<option value="Confirmada">Confirmada</option>
+					<option value="Cancelada">Cancelada</option>
+				</select>
+			</div>
 		</div>
-	</div>
 
-	<!-- Tabla de reservas -->
+		<!-- Tabla de reservas -->
 		<div>
 			<h2>Reservas</h2>
 			<table class="users-table">
 				<thead>
-				<tr>
-					<th>ID Reserva</th>
-					<th>Nombre Usuario</th>
-					<th>Email Usuario</th>
-					<th>Número Habitación</th>
-					<th>Huéspedes</th>
-					<th>Fecha Reserva</th>
-					<th>Fecha Inicio</th>
-					<th>Fecha Fin</th>
-					<th>Estado</th>
-					<th>Costo Total</th>
-					<th>Acciones</th>
-				</tr>
+					<tr>
+						<th>ID Reserva</th>
+						<th>Nombre Usuario</th>
+						<th>Email Usuario</th>
+						<th>Número Habitación</th>
+						<th>Huéspedes</th>
+						<th>Fecha Reserva</th>
+						<th>Fecha Inicio</th>
+						<th>Fecha Fin</th>
+						<th>Estado</th>
+						<th>Costo Total</th>
+						<th>Acciones</th>
+					</tr>
 				</thead>
 				<tbody>
-				<tr v-for="reserva in filteredReservas" :key="reserva.id_reserva">
-					<td>{{ reserva.id_reserva }}</td>
-					<td>{{ reserva.nombre_usuario }}</td>
-					<td>{{ reserva.email_usuario }}</td>
-					<td>{{ reserva.numero_habitacion }}</td>
-					<td>{{ reserva.num_huespedes }}</td>
-					<td>{{ formatDate(reserva.fecha_reserva) }}</td>
-					<td>{{ formatDate(reserva.fecha_inicio) }}</td>
-					<td>{{ formatDate(reserva.fecha_fin) }}</td>
-					<td>
-						<span :class="['estado-badge', reserva.estado.toLowerCase()]">{{ reserva.estado }}</span>
-					</td>
-					<td>${{ reserva.costo_total }}</td>
-					<td>
-						<button class="btn" @click="openEditReservaModal(reserva)" title="Editar">
-							✏️
-						</button>
-						<button
-							class="btn btn-critical"
-							@click="deleteReserva(reserva)"
-							title="Eliminar"
-						>
-							🗑️
-						</button>
-					</td>
-				</tr>
+					<tr v-for="reserva in filteredReservas" :key="reserva.id_reserva">
+						<td>{{ reserva.id_reserva }}</td>
+						<td>{{ reserva.nombre_usuario }}</td>
+						<td>{{ reserva.email_usuario }}</td>
+						<td>{{ reserva.numero_habitacion }}</td>
+						<td>{{ reserva.num_huespedes }}</td>
+						<td>{{ formatDate(reserva.fecha_reserva) }}</td>
+						<td>{{ formatDate(reserva.fecha_inicio) }}</td>
+						<td>{{ formatDate(reserva.fecha_fin) }}</td>
+						<td>
+							<span :class="['estado-badge', reserva.estado.toLowerCase()]">{{
+								reserva.estado
+							}}</span>
+						</td>
+						<td>${{ reserva.costo_total }}</td>
+						<td>
+							<button
+								class="btn"
+								@click="openEditReservaModal(reserva)"
+								title="Editar"
+							>
+								✏️
+							</button>
+							<button
+								class="btn btn-critical"
+								@click="deleteReserva(reserva)"
+								title="Eliminar"
+							>
+								🗑️
+							</button>
+						</td>
+					</tr>
 				</tbody>
 			</table>
 		</div>
@@ -433,7 +457,11 @@ onMounted(() => {
 					<div>
 						<label>Número de Habitación *</label>
 						<select v-model="reservaForm.id_habitacion" required>
-							<option v-for="hab in habitaciones" :key="hab.id_habitacion" :value="hab.id_habitacion">
+							<option
+								v-for="hab in habitaciones"
+								:key="hab.id_habitacion"
+								:value="hab.id_habitacion"
+							>
 								{{ hab.numero }}
 							</option>
 						</select>
@@ -441,7 +469,12 @@ onMounted(() => {
 
 					<div>
 						<label>Número de huéspedes *</label>
-						<input type="number" min="1" v-model.number="reservaForm.num_huespedes" required />
+						<input
+							type="number"
+							min="1"
+							v-model.number="reservaForm.num_huespedes"
+							required
+						/>
 					</div>
 
 					<div>
@@ -471,10 +504,12 @@ onMounted(() => {
 					</div>
 
 					<div>
-						<button class="btn" type="submit">
-							Actualizar
-						</button>
-						<button type="button" class="btn btn-critical" @click="closeEditReservaModal">
+						<button class="btn" type="submit">Actualizar</button>
+						<button
+							type="button"
+							class="btn btn-critical"
+							@click="closeEditReservaModal"
+						>
 							Cancelar
 						</button>
 					</div>
@@ -494,7 +529,11 @@ onMounted(() => {
 						<label>Usuario *</label>
 						<select v-model="reservaCreateForm.auth_id_usuario" required>
 							<option value="" disabled>Selecciona un usuario</option>
-							<option v-for="user in users" :key="user.auth_id" :value="user.auth_id">
+							<option
+								v-for="user in users"
+								:key="user.auth_id"
+								:value="user.auth_id"
+							>
 								{{ user.nombre }} - {{ user.email }}
 							</option>
 						</select>
@@ -504,7 +543,11 @@ onMounted(() => {
 						<label>Número de Habitación *</label>
 						<select v-model="reservaCreateForm.id_habitacion" required>
 							<option value="" disabled>Selecciona una habitación</option>
-							<option v-for="hab in habitaciones" :key="hab.id_habitacion" :value="hab.id_habitacion">
+							<option
+								v-for="hab in habitaciones"
+								:key="hab.id_habitacion"
+								:value="hab.id_habitacion"
+							>
 								{{ hab.numero }}
 							</option>
 						</select>
@@ -512,18 +555,31 @@ onMounted(() => {
 
 					<div>
 						<label>Número de huéspedes *</label>
-						<input type="number" min="1" v-model.number="reservaCreateForm.num_huespedes" required />
+						<input
+							type="number"
+							min="1"
+							v-model.number="reservaCreateForm.num_huespedes"
+							required
+						/>
 					</div>
 
 					<div>
 						<div>
 							<label>Fecha Inicio *</label>
-							<input type="date" v-model="reservaCreateForm.fecha_inicio" required />
+							<input
+								type="date"
+								v-model="reservaCreateForm.fecha_inicio"
+								required
+							/>
 						</div>
 
 						<div>
 							<label>Fecha Fin *</label>
-							<input type="date" v-model="reservaCreateForm.fecha_fin" required />
+							<input
+								type="date"
+								v-model="reservaCreateForm.fecha_fin"
+								required
+							/>
 						</div>
 					</div>
 
@@ -538,7 +594,11 @@ onMounted(() => {
 
 					<div>
 						<label>Costo Total</label>
-						<input type="number" v-model.number="reservaCreateForm.costo_total" min="0" />
+						<input
+							type="number"
+							v-model.number="reservaCreateForm.costo_total"
+							min="0"
+						/>
 					</div>
 
 					<div>
@@ -548,7 +608,13 @@ onMounted(() => {
 
 					<div>
 						<button class="btn" type="submit">Crear</button>
-						<button type="button" class="btn btn-critical" @click="closeCreateReservaModal">Cancelar</button>
+						<button
+							type="button"
+							class="btn btn-critical"
+							@click="closeCreateReservaModal"
+						>
+							Cancelar
+						</button>
 					</div>
 				</form>
 			</div>
@@ -727,7 +793,9 @@ div[v-if] > div {
 	background: white;
 	padding: 2rem;
 	border-radius: 8px;
-	box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+	box-shadow:
+		0 20px 25px -5px rgba(0, 0, 0, 0.1),
+		0 10px 10px -5px rgba(0, 0, 0, 0.04);
 	max-width: 500px;
 	width: 90%;
 	max-height: 90vh;

@@ -17,7 +17,12 @@ interface Reservation {
 	numGuests: number;
 	observations: string;
 	totalPrice: number;
-	paymentMethod: "Efectivo" | "Tarjeta crédito" | "Tarjeta débito" | "Transferencia" | "Otro";
+	paymentMethod:
+		| "Efectivo"
+		| "Tarjeta crédito"
+		| "Tarjeta débito"
+		| "Transferencia"
+		| "Otro";
 }
 
 const emit = defineEmits<{
@@ -137,13 +142,13 @@ const insertReservation = async (userId: string) => {
 		})
 		.select()
 		.single();
-		
+
 	if (error) throw error;
 	return data;
 };
 
 const insertBill = async (reservationId: number) => {
-	const { data, error } = await supabase
+	const { error } = await supabase
 		.from("facturas")
 		.insert({
 			subtotal: subtotal.value,
@@ -155,7 +160,7 @@ const insertBill = async (reservationId: number) => {
 		})
 		.select()
 		.single();
-		
+
 	if (error) throw error;
 };
 
@@ -189,7 +194,7 @@ const insertTablesInformation = async () => {
 
 		// Insertar reserva
 		const reservationData = await insertReservation(userData.user.id);
-		
+
 		// Insertar factura
 		await insertBill(reservationData.id_reserva);
 
@@ -199,7 +204,6 @@ const insertTablesInformation = async () => {
 		setTimeout(() => {
 			emit("reservation-complete");
 		}, 1500);
-		
 	} catch (error: any) {
 		console.error("Error creating reservation:", error);
 
@@ -231,10 +235,11 @@ const getMinDate = () => {
 </script>
 
 <template>
-	<div class="guest-book">
-		<p class="price">${{ pricePerNight }} <span class="per-night">/ noche</span></p>
-
-		<form @submit.prevent="insertTablesInformation">
+	<form @submit.prevent="insertTablesInformation">
+		<fieldset>
+			<legend>
+				<h2>${{ pricePerNight }} / noche</h2>
+			</legend>
 			<div class="input-group">
 				<label>Fecha de Check-in</label>
 				<input
@@ -288,7 +293,7 @@ const getMinDate = () => {
 				></textarea>
 			</div>
 
-			<div v-if="newReservation.totalPrice > 0" class="resumen">
+			<div v-if="newReservation.totalPrice > 0">
 				<h3>Resumen de la reserva</h3>
 				<p>Habitación #{{ props.roomNumber }}</p>
 				<p>Días de estadía: {{ daysStaying }} noches</p>
@@ -302,16 +307,15 @@ const getMinDate = () => {
 				<p class="total">Total: ${{ newReservation.totalPrice.toFixed(2) }}</p>
 			</div>
 
-			<ToastMessage />
+			<button type="button" class="btn-critical" @click="cancelBook">
+				Cancelar
+			</button>
 
-			<div class="form-actions">
-				<button type="button" class="btn btn-critical" @click="cancelBook">
-					Cancelar
-				</button>
-				<button type="submit" class="btn" :disabled="loading">
-					{{ loading ? "Procesando..." : "Confirmar Reserva" }}
-				</button>
-			</div>
-		</form>
-	</div>
+			<button type="submit" class="btn" :disabled="loading">
+				{{ loading ? "Procesando..." : "Confirmar Reserva" }}
+			</button>
+
+			<ToastMessage />
+		</fieldset>
+	</form>
 </template>

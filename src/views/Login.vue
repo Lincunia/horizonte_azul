@@ -72,7 +72,6 @@ const handleLogin = async (): Promise<void> => {
 			return;
 		}
 
-
 		// Mostrar mensaje de éxito y redirigir según el rol
 		useToast().showMessage(
 			"success",
@@ -121,44 +120,45 @@ const goToHome = (): void => {
 </script>
 
 <template>
-	<div class="container">
-		<div class="card">
-			<img v-if="logo" :src="logo" class="logo" alt="Logo" />
-			<h2>Iniciar Sesión</h2>
-			<form @submit.prevent="handleLogin">
-				<div class="input-group">
-					<label>Email</label>
-					<input
-						type="email"
-						v-model="loginForm.email"
-						required
-						:disabled="loading"
-					/>
-				</div>
-				<div class="input-group">
-					<label>Contraseña</label>
-					<input
-						type="password"
-						v-model="loginForm.password"
-						required
-						:disabled="loading"
-					/>
-				</div>
-				<button type="submit" class="btn" :disabled="loading">
-					{{ loading ? "Iniciando sesión..." : "Iniciar Sesión" }}
-				</button>
-				<button
-					type="button"
-					class="btn btn-secondary"
-					@click="goToHome"
+	<form @submit.prevent="handleLogin">
+		<fieldset>
+			<legend>
+				<img v-if="logo" :src="logo" class="logo" alt="Logo" />
+				<h2>Iniciar Sesión</h2>
+			</legend>
+			<div class="input-group">
+				<label>Email</label>
+				<input
+					type="email"
+					v-model="loginForm.email"
+					required
 					:disabled="loading"
-				>
-					Volver
-				</button>
-				<p class="link" @click="goToRegister">¿No tienes cuenta? Regístrate</p>
-			</form>
+				/>
+			</div>
+			<div class="input-group">
+				<label>Contraseña</label>
+				<input
+					type="password"
+					v-model="loginForm.password"
+					required
+					:disabled="loading"
+				/>
+			</div>
+			<button type="submit" class="btn" :disabled="loading">
+				{{ loading ? "Iniciando sesión..." : "Iniciar Sesión" }}
+			</button>
+			<button
+				type="button"
+				class="btn-secondary"
+				@click="goToHome"
+				:disabled="loading"
+			>
+				Volver
+			</button>
+
+			<a @click="goToRegister">¿No tienes cuenta? Regístrate</a>
 
 			<ToastMessage />
-		</div>
-	</div>
+		</fieldset>
+	</form>
 </template>

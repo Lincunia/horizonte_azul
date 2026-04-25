@@ -94,12 +94,12 @@ const handleEmailVerification = async (email?: string) => {
 	if (pendingData.email !== email) return;
 
 	// Esperar un momento para que la sesión se establezca completamente
-    await new Promise(resolve => setTimeout(resolve, 1000));
+	await new Promise((resolve) => setTimeout(resolve, 1000));
 
 	try {
 		const {
 			data: { user },
-			error: userError
+			error: userError,
 		} = await supabase.auth.getUser();
 
 		if (!user || userError) {
@@ -205,7 +205,7 @@ const registerUser = async (dataUser: RegisterForm) => {
 		email: dataUser.email,
 		password: dataUser.password,
 		options: {
-			emailRedirectTo: `${window.location.origin}/verify-email`
+			emailRedirectTo: `${window.location.origin}/verify-email`,
 		},
 	});
 
@@ -288,114 +288,111 @@ const goToHome = (): void => {
 </script>
 
 <template>
-	<div class="container">
-		<div class="card">
-			<img v-if="logo" :src="logo" class="logo" alt="Logo" />
+	<form @submit.prevent="handleRegister">
+		<fieldset>
+			<legend>
+				<img v-if="logo" :src="logo" class="logo" alt="Logo" />
 
-			<h2>Registro</h2>
+				<h2>Registro</h2>
+			</legend>
 
-			<form @submit.prevent="handleRegister">
-				<div class="input-group">
-					<label>Tipo de identificación</label>
-					<select v-model="registerForm.idType" :disabled="isBlocked" required>
-						<option>CC</option>
-						<option>CE</option>
-						<option>Pasaporte</option>
-						<option>Otro</option>
-					</select>
-				</div>
-
-				<div class="input-group">
-					<label>Número de identificación</label>
-					<input
-						type="text"
-						v-model="registerForm.idNum"
-						:disabled="isBlocked"
-						required
-					/>
-				</div>
-
-				<div class="input-group">
-					<label>Nombre</label>
-					<input
-						type="text"
-						v-model="registerForm.name"
-						:disabled="isBlocked"
-						required
-					/>
-				</div>
-
-				<div class="input-group">
-					<label>Email</label>
-					<input
-						type="email"
-						v-model="registerForm.email"
-						:disabled="isBlocked"
-						required
-					/>
-				</div>
-
-				<div class="input-group">
-					<label>Teléfono</label>
-					<input
-						type="tel"
-						v-model="registerForm.phone"
-						:disabled="isBlocked"
-						required
-					/>
-				</div>
-
-				<div class="input-group">
-					<label>Rol</label>
-					<select v-model="registerForm.role" :disabled="isBlocked" required>
-						<option>Huesped</option>
-						<option>Recepcionista</option>
-						<option>Administrador</option>
-					</select>
-				</div>
-
-				<div class="input-group">
-					<label>Contraseña</label>
-					<input
-						type="password"
-						v-model="registerForm.password"
-						:disabled="isBlocked"
-						required
-					/>
-				</div>
-
-				<div class="input-group">
-					<label>Confirmar Contraseña</label>
-					<input
-						type="password"
-						v-model="registerForm.confirmPassword"
-						:disabled="isBlocked"
-						required
-					/>
-				</div>
-
-				<button type="submit" class="btn" :disabled="loading || isBlocked">
-					{{ loading ? "Registrando..." : "Registrarse" }}
-				</button>
-
-				<button
-					type="button"
-					class="btn btn-secondary"
-					@click="goToHome"
-					:disabled="isBlocked"
-				>
-					Volver
-				</button>
-
-				<p class="link" @click="goToLogin" style="cursor: pointer">
-					¿Ya tienes cuenta? Inicia sesión
-				</p>
-			</form>
-
-			<div v-if="isBlocked">
-			<ToastMessage />
+			<div class="input-group">
+				<label>Tipo de identificación</label>
+				<select v-model="registerForm.idType" :disabled="isBlocked" required>
+					<option>CC</option>
+					<option>CE</option>
+					<option>Pasaporte</option>
+					<option>Otro</option>
+				</select>
 			</div>
 
-		</div>
-	</div>
+			<div class="input-group">
+				<label>Número de identificación</label>
+				<input
+					type="text"
+					v-model="registerForm.idNum"
+					:disabled="isBlocked"
+					required
+				/>
+			</div>
+
+			<div class="input-group">
+				<label>Nombre</label>
+				<input
+					type="text"
+					v-model="registerForm.name"
+					:disabled="isBlocked"
+					required
+				/>
+			</div>
+
+			<div class="input-group">
+				<label>Email</label>
+				<input
+					type="email"
+					v-model="registerForm.email"
+					:disabled="isBlocked"
+					required
+				/>
+			</div>
+
+			<div class="input-group">
+				<label>Teléfono</label>
+				<input
+					type="tel"
+					v-model="registerForm.phone"
+					:disabled="isBlocked"
+					required
+				/>
+			</div>
+
+			<div class="input-group">
+				<label>Rol</label>
+				<select v-model="registerForm.role" :disabled="isBlocked" required>
+					<option>Huesped</option>
+					<option>Recepcionista</option>
+					<option>Administrador</option>
+				</select>
+			</div>
+
+			<div class="input-group">
+				<label>Contraseña</label>
+				<input
+					type="password"
+					v-model="registerForm.password"
+					:disabled="isBlocked"
+					required
+				/>
+			</div>
+
+			<div class="input-group">
+				<label>Confirmar Contraseña</label>
+				<input
+					type="password"
+					v-model="registerForm.confirmPassword"
+					:disabled="isBlocked"
+					required
+				/>
+			</div>
+
+			<button type="submit" class="btn" :disabled="loading || isBlocked">
+				{{ loading ? "Registrando..." : "Registrarse" }}
+			</button>
+
+			<button
+				type="button"
+				class="btn-secondary"
+				@click="goToHome"
+				:disabled="isBlocked"
+			>
+				Volver
+			</button>
+
+			<a @click="goToLogin"> ¿Ya tienes cuenta? Inicia sesión </a>
+
+			<div v-if="isBlocked">
+				<ToastMessage />
+			</div>
+		</fieldset>
+	</form>
 </template>

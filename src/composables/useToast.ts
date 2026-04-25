@@ -22,6 +22,10 @@ export function useToast() {
 
 		message.value = { type, text };
 
+		if(duration === -1){
+			return;
+		}
+
 		timeoutId = setTimeout(() => {
 			message.value = null;
 			timeoutId = null;

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, nextTick } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
-import { usePdf } from "../../composables/pdf.ts";
+import { usePDF } from "../../composables/usePDF.ts";
 interface Factura {
 	id_factura: number;
 	fecha_emision: string;
@@ -67,7 +67,7 @@ const loadReservas = async () => {
 	try {
 		const { data, error } = await supabase
 			.from("reservas")
-			.select("id_reserva, id_usuario, fecha_inicio, fecha_fin, costo_total, estado")
+			.select("id_reserva, auth_id_usuario, fecha_inicio, fecha_fin, costo_total, estado")
 			.order("fecha_inicio", { ascending: false });
 		if (error) throw error;
 		reservas.value = (data as any) || [];
@@ -143,12 +143,12 @@ const exportarFactura = async (factura: Factura): Promise<void> => {
 
 	facturaSeleccionada.value = factura;
 	await nextTick();
-	usePdf().exportarPdf(`factura_${factura.id_factura}.pdf`, pdfRef.value);
+	usePDF().exportarPdf(`factura_${factura.id_factura}.pdf`, pdfRef.value);
 };
 
 onMounted(() => {
 	loadFacturas();
-	// loadReservas();
+	loadReservas();
 });
 
 </script>

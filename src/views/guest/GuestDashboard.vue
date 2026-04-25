@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import LoaderMessage from "../../components/LoaderMessage.vue";
 import Modal from "../../components/Modal.vue";
 import GuestBook from "./GuestBook.vue";
 
@@ -72,23 +73,24 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="guest-dashboard">
-		<div class="dashboard-header">
+
+	<main>
+		<header class="dashboard">
 			<h2>🏨Habitaciones Disponibles</h2>
 			<p>Encuentra la habitación perfecta para tu estadía</p>
-		</div>
+		</header>
 
-		<div v-if="loading" class="loading">
-			<div class="spinner"></div>
-			<p>Cargando habitaciones...</p>
-		</div>
+		<LoaderMessage
+				v-if="loading"
+				message="Cargando habitaciones..."
+		/>
+		<LoaderMessage
+				v-else-if="rooms.length === 0"
+				message="😕 No hay habitaciones disponibles en este momento"
+		/>
 
-		<div v-else-if="rooms.length === 0" class="empty-state">
-			<p>😕 No hay habitaciones disponibles en este momento</p>
-		</div>
-
-		<div v-else class="rooms-grid">
-			<div v-for="room in rooms" :key="room.id_habitacion" class="room-card">
+		<ul v-else class="rooms-grid">
+			<li v-for="room in rooms" :key="room.id_habitacion" class="room-card">
 				<div class="room-header">
 					<span class="room-icon">{{ getTipoIcon(room.tipo) }}</span>
 					<span class="room-number">Habitación #{{ room.numero }}</span>
@@ -128,8 +130,8 @@ onMounted(() => {
 						<span class="per-night">/ noche</span>
 					</div>
 				</div>
-			</div>
-		</div>
+			</li>
+		</ul>
 		<!-- Modal para reservar -->
 		<Modal
 			v-model="showModal"
@@ -144,28 +146,18 @@ onMounted(() => {
 				@reservation-complete="closeModal"
 			/>
 		</Modal>
-	</div>
+	</main>
 </template>
 
 <style scoped>
-.guest-dashboard {
-	padding: 2rem;
-	max-width: 1400px;
-	margin: 0 auto;
-}
 
-.dashboard-header {
-	text-align: center;
-	margin-bottom: 2rem;
-}
-
-.rooms-grid {
+ul.rooms-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
 	gap: 1.5rem;
 }
 
-.room-card {
+li.room-card {
 	background: white;
 	border-radius: 12px;
 	overflow: hidden;
@@ -223,30 +215,6 @@ onMounted(() => {
 .per-night {
 	color: #7f8c8d;
 	font-size: 0.875rem;
-}
-
-.loading {
-	text-align: center;
-	padding: 3rem;
-}
-
-.spinner {
-	border: 3px solid #f3f3f3;
-	border-top: 3px solid #667eea;
-	border-radius: 50%;
-	width: 40px;
-	height: 40px;
-	animation: spin 1s linear infinite;
-	margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
-	}
 }
 
 .empty-state {

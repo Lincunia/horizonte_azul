@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
 import { useToast } from "../composables/useToast.ts";
 import ToastMessage from "../components/ToastMessage.vue";
-
-const router = useRouter();
 
 onMounted(async () => {
 	const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -19,7 +17,7 @@ onMounted(async () => {
 
 		if (error) {
 			useToast().showMessage("error", "Error al verificar tu cuenta");
-			router.push("/login");
+			useRouter().push("/login");
 			return;
 		}
 
@@ -51,7 +49,7 @@ onMounted(async () => {
 
 		// Cerrar sesión para forzar login
 		await supabase.auth.signOut();
-		router.push("/login");
+		useRouter().push("/login");
 	}
 });
 </script>
