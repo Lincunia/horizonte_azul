@@ -235,7 +235,7 @@ onMounted(() => {
 
 .status-pending {
 	background: var(--amarillo-principal);
-	color: var(--text-h);
+	color: var(--negro);
 }
 
 .status-confirmed {
@@ -250,17 +250,17 @@ onMounted(() => {
 
 .status-completed {
 	background: var(--blanco);
-	color: var(--text-h);
+	color: var(--negro);
 }
 
 .status-paid {
 	background: var(--verde-claro);
-	color: var(--text-h);
+	color: var(--negro);
 }
 
 .status-refunded {
 	background: var(--rojo);
-	color: var(--blanco)o
+	color: var(--blanco);
 }
 
 .reservation-body {

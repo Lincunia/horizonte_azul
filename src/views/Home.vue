@@ -19,16 +19,16 @@ const goToRegister = () => {
 		<span>Hotel Horizonte Azul</span>
 	</header>
 
-	<main class="hero">
+	<div class="hero">
 		<h1>
 			Bienvenido, regístrate y acércate
 			<span class="resaltado">más a tus vacaciones ideales </span>
 		</h1>
-		<div style="flex-direction: row">
+		<div>
 			<button class="btn-alternative" @click="goToLogin">Iniciar Sesión</button>
 			<button class="btn-alternative" @click="goToRegister">Registrarse</button>
 		</div>
-	</main>
+	</div>
 </template>
 
 <style scoped>
@@ -36,15 +36,12 @@ const goToRegister = () => {
 	text-align: center;
 }
 
-main.hero {
+.hero {
 	min-height: 100vh;
-	background:
-		linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-		url("./assets/hero.jpg");
+	background: url("../assets/hero.jpg");
 	background-size: cover;
 	background-position: center;
 	background-repeat: no-repeat;
-	color: var(--blanco);
 	display: flex;
 	align-items: center;
 	flex-direction: column;

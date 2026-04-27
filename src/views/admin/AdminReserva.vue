@@ -656,50 +656,6 @@ div:has(> .btn:first-child) .btn-critical:hover {
 	background: #b91c1c;
 }
 
-/* Tabla de reservas */
-.users-table {
-	width: 100%;
-	border-collapse: collapse;
-	background: white;
-	border-radius: 8px;
-	overflow: hidden;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	margin-top: 1rem;
-}
-
-.users-table thead {
-	background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-}
-
-.users-table th {
-	padding: 1rem;
-	text-align: left;
-	font-weight: 600;
-	color: #374151;
-	border-bottom: 2px solid #d1d5db;
-	font-size: 0.9rem;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-}
-
-.users-table td {
-	padding: 1rem;
-	border-bottom: 1px solid #e5e7eb;
-	font-size: 0.9rem;
-}
-
-.users-table tbody tr {
-	transition: background-color 0.2s ease;
-}
-
-.users-table tbody tr:hover {
-	background-color: #f9fafb;
-}
-
-.users-table tbody tr:last-child td {
-	border-bottom: none;
-}
-
 /* Botones en tabla */
 .users-table .btn {
 	padding: 0.5rem;

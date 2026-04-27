@@ -46,9 +46,24 @@ onMounted(() => {
 
 	<nav class="tabs">
 		<ul>
-			<li class="tab"><a @click="activeTab = 'dashboard'">Habitaciones</a></li>
-			<li class="tab"><a @click="activeTab = 'reservations'">Reservas</a></li>
-			<li class="tab"><a @click="activeTab = 'calendar'">Calendario</a></li>
+			<li
+				class="tab"
+				:class="{ active: activeTab === 'dashboard' }"
+			>
+				<a @click="activeTab = 'dashboard'">Habitaciones</a>
+			</li>
+			<li
+				class="tab"
+				:class="{ active: activeTab === 'reservations' }"
+			>
+				<a @click="activeTab = 'reservations'">Reservas</a>
+			</li>
+			<li
+				class="tab"
+				:class="{ active: activeTab === 'calendar' }"
+			>
+				<a @click="activeTab = 'calendar'">Calendario</a>
+			</li>
 		</ul>
 	</nav>
 

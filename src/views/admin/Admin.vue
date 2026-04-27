@@ -24,9 +24,6 @@ const handleLogout = async () => {
 	}
 };
 
-const goToHome = () => {
-	router.push("/");
-};
 
 onMounted(() => {
 	useToast().hideMessage();
@@ -39,7 +36,6 @@ onMounted(() => {
 		<div class="navbar">
 			<h1>Panel de Administración</h1>
 			<div>
-				<button class="btn" @click="goToHome">Inicio</button>
 				<button class="btn btn-critical" @click="handleLogout">
 					Cerrar Sesión
 				</button>
@@ -50,36 +46,36 @@ onMounted(() => {
 		<ToastMessage />
 
 		<!-- Pestañas -->
-		<div class="tabs">
-			<button
-				class="tab-button"
+		<nav class="tabs">
+			<li
+				class="tab"
 				:class="{ active: activeTab === 'usuarios' }"
 				@click="activeTab = 'usuarios'"
 			>
 				Usuarios
-			</button>
-			<button
-				class="tab-button"
+			</li>
+			<li
+				class="tab"
 				:class="{ active: activeTab === 'reservas' }"
 				@click="activeTab = 'reservas'"
 			>
 				Reservas
-			</button>
-			<button
-				class="tab-button"
+			</li>
+			<li
+				class="tab"
 				:class="{ active: activeTab === 'habitaciones' }"
 				@click="activeTab = 'habitaciones'"
 			>
 				Habitaciones
-			</button>
-			<button
-				class="tab-button"
+			</li>
+			<li
+				class="tab"
 				:class="{ active: activeTab === 'facturas' }"
 				@click="activeTab = 'facturas'"
 			>
 				Facturas
-			</button>
-		</div>
+			</li>
+		</nav>
 
 		<!-- Contenido de pestañas -->
 		<div class="tab-content">
