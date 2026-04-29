@@ -120,45 +120,51 @@ const goToHome = (): void => {
 </script>
 
 <template>
-	<form @submit.prevent="handleLogin">
-		<fieldset>
-			<legend>
-				<img v-if="logo" :src="logo" class="logo" alt="Logo" />
-				<h2>Iniciar Sesión</h2>
-			</legend>
-			<div class="input-group">
-				<label>Email</label>
-				<input
-					type="email"
-					v-model="loginForm.email"
-					required
-					:disabled="loading"
-				/>
-			</div>
-			<div class="input-group">
-				<label>Contraseña</label>
-				<input
-					type="password"
-					v-model="loginForm.password"
-					required
-					:disabled="loading"
-				/>
-			</div>
-			<button type="submit" class="btn" :disabled="loading">
+	<header class="text-center">
+		<img v-if="logo" :src="logo" class="logo" alt="Logo" />
+		<h2>Iniciar Sesión</h2>
+	</header>
+	<form @submit.prevent="handleLogin" class="container-sm col-4">
+		<div class="mb-3">
+			<label class="form-label">Email</label>
+			<input
+				type="email"
+				v-model="loginForm.email"
+				class="form-control"
+
+				required
+				:disabled="loading"
+			/>
+		</div>
+		<div class="mb-3">
+			<label class="form-label">Contraseña</label>
+			<input
+				type="password"
+				v-model="loginForm.password"
+				class="form-control"
+
+				required
+				:disabled="loading"
+			/>
+		</div>
+		<div class="d-flex justify-content-center gap-5">
+			<button type="submit" class="btn btn-primary" :disabled="loading">
 				{{ loading ? "Iniciando sesión..." : "Iniciar Sesión" }}
 			</button>
 			<button
 				type="button"
-				class="btn-secondary"
+				class="btn btn-secondary"
 				@click="goToHome"
 				:disabled="loading"
 			>
 				Volver
 			</button>
+		</div>
 
-			<a @click="goToRegister">¿No tienes cuenta? Regístrate</a>
+		<a @click="goToRegister" class="p-1 rounded"
+			>¿No tienes cuenta? Regístrate</a
+		>
 
-			<ToastMessage />
-		</fieldset>
+		<ToastMessage />
 	</form>
 </template>

@@ -24,10 +24,6 @@ const handleLogout = async () => {
 	}
 };
 
-const goToHome = () => {
-	router.push("/");
-};
-
 onMounted(() => {
 	useToast().hideMessage();
 });
@@ -37,8 +33,7 @@ onMounted(() => {
 	<header class="navbar">
 		<h1>Panel de Huésped</h1>
 		<div>
-			<button class="btn" @click="goToHome">Inicio</button>
-			<button class="btn btn-critical" @click="handleLogout">
+			<button class="btn btn-danger" @click="handleLogout">
 				Cerrar Sesión
 			</button>
 		</div>

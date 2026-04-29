@@ -14,37 +14,21 @@ const goToRegister = () => {
 </script>
 
 <template>
-	<header>
-		<img v-if="logo" :src="logo" class="logo" alt="Logo" />
-		<span>Hotel Horizonte Azul</span>
-	</header>
+	<main class="hero">
+		<header class="d-md-flex p-3 justify-content-between align-items-center">
+			<img v-if="logo" :src="logo" class="logo" alt="Logo" />
+			<h2>Hotel Horizonte Azul</h2>
+		</header>
 
-	<div class="hero">
-		<h1>
-			Bienvenido, regístrate y acércate
-			<span class="resaltado">más a tus vacaciones ideales </span>
+		<h1 class="text-center p-5 text-orange-100">
+			Bienvenido, acércate a <br />
+			<span class="text-primary"> tus vacaciones ideales </span>
 		</h1>
-		<div>
-			<button class="btn-alternative" @click="goToLogin">Iniciar Sesión</button>
-			<button class="btn-alternative" @click="goToRegister">Registrarse</button>
+
+		<div class="d-flex justify-content-center gap-5">
+			<button class="btn btn-primary" @click="goToLogin">Iniciar Sesión</button>
+			<button class="btn btn-primary" @click="goToRegister">Registrarse</button>
 		</div>
-	</div>
+	</main>
 </template>
 
-<style scoped>
-.hero h1 {
-	text-align: center;
-}
-
-.hero {
-	min-height: 100vh;
-	background: url("../assets/hero.jpg");
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
-	display: flex;
-	align-items: center;
-	flex-direction: column;
-	justify-content: center;
-}
-</style>
