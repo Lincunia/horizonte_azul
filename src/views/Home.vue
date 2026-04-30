@@ -25,8 +25,8 @@ const goToRegister = () => {
 			<span class="resaltado">más a tus vacaciones ideales </span>
 		</h1>
 		<div>
-			<button class="btn-alternative" @click="goToLogin">Iniciar Sesión</button>
-			<button class="btn-alternative" @click="goToRegister">Registrarse</button>
+			<button data-test="btn-login" class="btn-alternative" @click="goToLogin">Iniciar Sesión</button>
+			<button data-test="btn-register" class="btn-alternative" @click="goToRegister">Registrarse</button>
 		</div>
 	</div>
 </template>
