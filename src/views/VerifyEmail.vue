@@ -9,54 +9,63 @@ onMounted(async () => {
 	const hashParams = new URLSearchParams(window.location.hash.substring(1));
 	const accessToken = hashParams.get("access_token");
 
-	if (accessToken) {
-		const { data, error } = await supabase.auth.setSession({
-			access_token: accessToken,
-			refresh_token: hashParams.get("refresh_token") || "",
+	if (!accessToken) {
+		return;
+	}
+	const { data, error } = await supabase.auth.setSession({
+		access_token: accessToken,
+		refresh_token: hashParams.get("refresh_token") || "",
+	});
+
+	if (error) {
+		useToast().showMessage(
+			"alert alert-danger",
+			"Error al verificar tu cuenta",
+		);
+		useRouter().push("/login");
+		return;
+	}
+
+	const pendingDataJson = localStorage.getItem("pendingUserData");
+	if (pendingDataJson && data.user) {
+		const pendingData = JSON.parse(pendingDataJson);
+
+		// Crear el perfil de usuario
+		const { error: insertError } = await supabase.from("usuarios").insert({
+			tipo_identificacion: pendingData.idType,
+			numero_identificacion: pendingData.idNum,
+			nombre: pendingData.name,
+			email: pendingData.email,
+			telefono: pendingData.phone,
+			rol_usuario: pendingData.role,
+			auth_id: data.user.id,
 		});
 
-		if (error) {
-			useToast().showMessage("error", "Error al verificar tu cuenta");
-			useRouter().push("/login");
-			return;
+		if (insertError) {
+			useToast().showMessage(
+				"alert alert-danger",
+				"Error al crear perfil:",
+				insertError,
+			);
+		} else {
+			useToast().showMessage(
+				"alert alert-success",
+				"¡Cuenta verificada exitosamente!",
+			);
+			localStorage.removeItem("pendingUserData");
+			localStorage.removeItem("pendingRegistrationTimestamp");
 		}
-
-		// Recuperar datos pendientes
-		const pendingDataJson = localStorage.getItem("pendingUserData");
-		if (pendingDataJson && data.user) {
-			const pendingData = JSON.parse(pendingDataJson);
-
-			// Crear el perfil de usuario
-			const { error: insertError } = await supabase.from("usuarios").insert({
-				tipo_identificacion: pendingData.idType,
-				numero_identificacion: pendingData.idNum,
-				nombre: pendingData.name,
-				email: pendingData.email,
-				telefono: pendingData.phone,
-				rol_usuario: pendingData.role,
-				auth_id: data.user.id,
-			});
-
-			if (insertError) {
-				console.error("Error al crear perfil:", insertError);
-				useToast().showMessage("error", "Error al completar el registro");
-			} else {
-				useToast().showMessage("success", "¡Cuenta verificada exitosamente!");
-				localStorage.removeItem("pendingUserData");
-				localStorage.removeItem("pendingRegistrationTimestamp");
-			}
-		}
-
-		// Cerrar sesión para forzar login
-		await supabase.auth.signOut();
-		useRouter().push("/login");
 	}
+
+	// Cerrar sesión para forzar login
+	await supabase.auth.signOut();
+	useRouter().push("/login");
 });
 </script>
 
 <template>
-	<div class="container">
-		<div class="card">
+	<div class="container-md d-flex justify-content-center">
+		<div class="align-items-center">
 			<h2>Verificando tu cuenta...</h2>
 			<p>Por favor espera mientras confirmamos tu registro.</p>
 		</div>

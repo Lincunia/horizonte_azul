@@ -20,66 +20,61 @@ const loginForm = ref<LoginForm>({
 
 const loading = ref(false);
 
+const signInUser = async (): Promise<string> => {
+	const { data, error } = await supabase.auth.signInWithPassword({
+		email: loginForm.value.email,
+		password: loginForm.value.password,
+	});
+	if (error) {
+		throw new Error(error.message);
+	}
+	if (!data.user) {
+		throw new Error("Error al iniciar sesión");
+	}
+	return data.user.id
+}
+
+const updateLastAccess = async (auth_id: string): Promise<void> => {
+	const { error } = await supabase
+		.from("usuarios")
+		.update({
+			ultimo_acceso: new Date().toISOString(),
+		})
+		.eq("auth_id", auth_id);
+	if (error) {
+		throw new Error(error.message);
+	}
+};
+
+const fetchUserData = async (auth_id: string): Promise<string> => {
+	const { data, error} = await supabase
+		.from("usuarios")
+		.select("rol_usuario")
+		.eq("auth_id", auth_id)
+		.single();
+	if (error) {
+		throw new Error(error.message);
+	}
+	if (!data) {
+		throw new Error("Error al autenticar usuario");
+	}
+	return data.rol_usuario;
+};
+
 const handleLogin = async (): Promise<void> => {
 	loading.value = true;
 
 	try {
-		const { data, error } = await supabase.auth.signInWithPassword({
-			email: loginForm.value.email,
-			password: loginForm.value.password,
-		});
-
-		if (error) {
-			if (error.message.includes("Invalid login credentials")) {
-				throw new Error("Correo electrónico o contraseña incorrectos");
-			}
-			if (error.message.includes("Email not confirmed")) {
-				throw new Error(
-					"Por favor, verifica tu correo electrónico antes de iniciar sesión",
-				);
-			}
-			throw new Error(error.message);
-		}
-
-		if (!data.user) {
-			throw new Error("Error al iniciar sesión");
-		}
-
-		const { error: updateError } = await supabase
-			.from("usuarios")
-			.update({
-				ultimo_acceso: new Date().toISOString(),
-			})
-			.eq("auth_id", data.user.id);
-
-		if (updateError) {
-			console.error("Error al actualizar último acceso:", updateError);
-		}
-
-		const { data: userData, error: userError } = await supabase
-			.from("usuarios")
-			.select("rol_usuario")
-			.eq("auth_id", data.user.id)
-			.single();
-
-		if (userError) {
-			console.error("Error al obtener rol:", userError);
-			useToast().showMessage(
-				"success",
-				"Inicio de sesión exitoso. Redirigiendo...",
-			);
-			setTimeout(() => router.push("/"), 1500);
-			return;
-		}
-
-		// Mostrar mensaje de éxito y redirigir según el rol
-		useToast().showMessage(
-			"success",
-			"Inicio de sesión exitoso. Redirigiendo...",
-		);
+		let auth_id:string = await signInUser();
+		await updateLastAccess(auth_id);
+		let rol_usuario:string = await fetchUserData(auth_id);
 
 		setTimeout(() => {
-			switch (userData.rol_usuario) {
+			useToast().showMessage(
+				"alert alert-success",
+				"Inicio de sesión exitoso. Redirigiendo...",
+			);
+			switch (rol_usuario) {
 				case "Administrador":
 					router.push("/admin");
 					break;
@@ -97,9 +92,8 @@ const handleLogin = async (): Promise<void> => {
 		}, 1500);
 	} catch (error: any) {
 		console.error("Error en login:", error);
-
 		useToast().showMessage(
-			"error",
+			"alert slert-danger",
 			error.message || "Ocurrió un error durante el inicio de sesión",
 		);
 		loading.value = false;
@@ -131,7 +125,6 @@ const goToHome = (): void => {
 				type="email"
 				v-model="loginForm.email"
 				class="form-control"
-
 				required
 				:disabled="loading"
 			/>
@@ -142,7 +135,6 @@ const goToHome = (): void => {
 				type="password"
 				v-model="loginForm.password"
 				class="form-control"
-
 				required
 				:disabled="loading"
 			/>

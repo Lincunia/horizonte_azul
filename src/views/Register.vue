@@ -31,19 +31,17 @@ const registerForm = ref<RegisterForm>({
 });
 
 const loading = ref(false);
-const isBlocked = ref(false);
 const timeLeft = ref(0);
 let countdownInterval: number | null = null;
 let pendingUserData: RegisterForm | null = null;
 
 onUnmounted(() => {
 	if (countdownInterval) {
-		clearInterval(countdownInterval);
+		countdownInterval = null;
 	}
 });
 
 onMounted(async () => {
-	// Obtener la URL actual para verificación de correo
 	const hashParams = new URLSearchParams(window.location.hash.substring(1));
 	const accessToken = hashParams.get("access_token");
 
@@ -53,44 +51,40 @@ onMounted(async () => {
 			refresh_token: hashParams.get("refresh_token") || "",
 		});
 
-		if (error) {
-			console.error("Error al confirmar correo:", error);
-			useToast().showMessage(
-				"error",
-				"Error al verificar tu cuenta. Intenta iniciar sesión.",
-			);
-			unblockAndCleanup();
-		} else {
+		if (!error) {
 			await handleEmailVerification(data.user?.email);
-
 			useToast().showMessage(
-				"success",
+				"alert alert-success",
 				"¡Correo verificado! Ya puedes iniciar sesión.",
 			);
 			window.location.hash = "";
 			unblockAndCleanup();
 			setTimeout(() => router.push("/login"), 2000);
 		}
-	} else {
-		const {
-			data: { session },
-		} = await supabase.auth.getSession();
-		if (session) {
-			router.push("/");
-		}
+		console.error("Error al confirmar correo:", error);
+		useToast().showMessage(
+			"alert alert-danger",
+			"Error al verificar tu cuenta. Intenta iniciar sesión.",
+		);
+		unblockAndCleanup();
+		checkPendingRegistration();
+	}
+	const {
+		data: { session },
+	} = await supabase.auth.getSession();
+	if (session) {
+		router.push("/");
 	}
 	checkPendingRegistration();
 });
 
 const handleEmailVerification = async (email?: string) => {
-	// Recuperar datos pendientes del localStorage
 	const pendingDataJson = localStorage.getItem("pendingUserData");
 	if (!pendingDataJson || !email) return;
 
 	const pendingData: RegisterForm = JSON.parse(pendingDataJson);
 	if (pendingData.email !== email) return;
 
-	// Esperar un momento para que la sesión se establezca completamente
 	await new Promise((resolve) => setTimeout(resolve, 1000));
 
 	try {
@@ -100,7 +94,7 @@ const handleEmailVerification = async (email?: string) => {
 		} = await supabase.auth.getUser();
 
 		if (!user || userError) {
-			throw new Error("Usuario no encontrado");
+			throw new Error("Usuario no encontrado", userError);
 		}
 
 		const { error: insertionError } = await supabase.from("usuarios").insert({
@@ -114,17 +108,12 @@ const handleEmailVerification = async (email?: string) => {
 		});
 
 		if (insertionError) {
-			console.error("Error al insertar usuario:", insertionError);
 			await supabase.auth.admin.deleteUser(user.id);
-			throw insertionError;
+			throw new Error("Error al insertar usuario:", insertionError);
 		}
 		clearPendingRegistration();
 	} catch (error) {
-		console.error("Error en verificación:", error);
-		useToast().showMessage(
-			"error",
-			"Error al completar el registro. Por favor, contacta al soporte.",
-		);
+		useToast().showMessage("alert slert-danger", error.message);
 	}
 };
 
@@ -132,51 +121,38 @@ const checkPendingRegistration = () => {
 	const pendingData = localStorage.getItem("pendingUserData");
 	const pendingTimestamp = localStorage.getItem("pendingRegistrationTimestamp");
 
-	if (pendingData && pendingTimestamp) {
-		const timeElapsed = Date.now() - parseInt(pendingTimestamp);
-		const remainingTime = 60 - Math.floor(timeElapsed / 1000);
-
-		if (remainingTime > 0) {
-			pendingUserData = JSON.parse(pendingData);
-			timeLeft.value = remainingTime;
-			startCountdown();
-			isBlocked.value = true;
-			useToast().showMessage(
-				"info",
-				`Registro pendiente de verificación. Tienes ${remainingTime} segundos para verificar tu correo.`,
-			);
-		} else {
-			clearPendingRegistration();
-			useToast().showMessage(
-				"error",
-				"El tiempo para verificar el registro ha expirado. Por favor, regístrate nuevamente.",
-			);
-		}
+	if (!(pendingData && pendingTimestamp)) {
+		return;
 	}
-};
+	const timeElapsed = Date.now() - parseInt(pendingTimestamp);
+	const remainingTime = 60 - Math.floor(timeElapsed / 1000);
 
-const startCountdown = () => {
-	if (countdownInterval) {
-		clearInterval(countdownInterval);
+	if (remainingTime <= 0) {
+		clearPendingRegistration();
+		useToast().showMessage(
+			"alert slert-danger",
+			"El tiempo para verificar el registro ha expirado. " +
+			"Por favor, regístrate nuevamente.",
+		);
+		return;
 	}
-
-	countdownInterval = setInterval(() => {
-		if (timeLeft.value > 0) {
-			timeLeft.value--;
-		} else {
-			clearInterval(countdownInterval!);
-			countdownInterval = null;
-			handleTimeout();
-		}
-	}, 1000);
+	pendingUserData = JSON.parse(pendingData);
+	timeLeft.value = remainingTime;
+	startCountdown();
+	loading.value = true;
+	useToast().showMessage(
+		"alert slert-warning",
+		`Registro pendiente de verificación. Tienes ${
+		remainingTime} segundos para verificar tu correo.`,
+	);
 };
 
 const handleTimeout = async () => {
-	isBlocked.value = false;
+	loading.value = false;
 	timeLeft.value = 0;
 	clearPendingRegistration();
 	useToast().showMessage(
-		"error",
+		"alert alert-danger",
 		"Tiempo de verificación expirado. Por favor, regístrate nuevamente.",
 	);
 };
@@ -186,15 +162,37 @@ const clearPendingRegistration = () => {
 	localStorage.removeItem("pendingRegistrationTimestamp");
 	pendingUserData = null;
 	if (countdownInterval) {
-		clearInterval(countdownInterval);
 		countdownInterval = null;
 	}
 };
 
 const unblockAndCleanup = () => {
-	isBlocked.value = false;
+	loading.value = false;
 	timeLeft.value = 0;
 	clearPendingRegistration();
+};
+
+const startCountdown = (email: string) => {
+	if (countdownInterval) {
+		countdownInterval = null;
+		return;
+	}
+
+	countdownInterval = setInterval(() => {
+		if (timeLeft.value <= 0) {
+			countdownInterval = null;
+			handleTimeout();
+			return;
+		}
+		useToast().showMessage(
+			"alert alert-success",
+			`Registro exitoso. Se ha enviado un correo de verificación a ${
+			email}. Tienes ${
+			timeLeft.value} segundos para verificarlo.`,
+			-1,
+		);
+		timeLeft.value--;
+	}, 1000);
 };
 
 const registerUser = async (dataUser: RegisterForm) => {
@@ -219,8 +217,12 @@ const registerUser = async (dataUser: RegisterForm) => {
 const handleRegister = async (): Promise<void> => {
 	loading.value = true;
 	let phonePattern = /^(\+\d{1,3}[.\s])?\d{1,10}$/;
+	let idPattern = /^\d+$/;
 
 	try {
+		if (!idPattern.test(registerForm.value.idNum)) {
+			throw new Error("Teléfono no válido");
+		}
 		if (!phonePattern.test(registerForm.value.phone)) {
 			throw new Error("Teléfono no válido");
 		}
@@ -233,16 +235,21 @@ const handleRegister = async (): Promise<void> => {
 		await registerUser(registerForm.value);
 
 		pendingUserData = { ...registerForm.value };
+		delete pendingUserData["password"];
+		delete pendingUserData["confirmPassword"];
 		localStorage.setItem("pendingUserData", JSON.stringify(pendingUserData));
 		localStorage.setItem("pendingRegistrationTimestamp", Date.now().toString());
 
-		isBlocked.value = true;
+		loading.value = true;
 		timeLeft.value = 60;
-		startCountdown();
+		startCountdown(registerForm.value.email);
 
 		useToast().showMessage(
-			"success",
-			`Registro exitoso. Se ha enviado un correo de verificación a ${registerForm.value.email}. Tienes ${timeLeft.value} segundos para verificarlo.`,
+			"alert alert-success",
+			`Registro exitoso. Se ha enviado un correo de verificación a ${
+			registerForm.value.email}. Tienes ${
+			timeLeft.value} segundos para verificarlo.`,
+			-1,
 		);
 
 		registerForm.value = {
@@ -257,19 +264,10 @@ const handleRegister = async (): Promise<void> => {
 		};
 	} catch (error: any) {
 		console.error(error);
-		if (error.message.includes("already registered")) {
-			useToast().showMessage(
-				"error",
-				"Este correo electrónico ya está registrado.",
-			);
-		} else if (error.code === "23505") {
-			useToast().showMessage("error", "Ya existe un usuario con esos datos.");
-		} else {
-			useToast().showMessage(
-				"error",
-				error.message || "Ocurrió un error durante el registro",
-			);
-		}
+		useToast().showMessage(
+			"alert alert-danger",
+			error.message || "Ocurrió un error durante el registro",
+		);
 	} finally {
 		loading.value = false;
 	}
@@ -291,8 +289,13 @@ const goToHome = (): void => {
 	</header>
 	<form @submit.prevent="handleRegister" class="container-sm col-4">
 		<div class="mb-3">
-			<label for="id-type" class="form-label">Tipo de identificación</label>
-			<select class="form-select" v-model="registerForm.idType" :disabled="isBlocked" required>
+			<label class="form-label">Tipo de identificación</label>
+			<select
+				class="form-select"
+				v-model="registerForm.idType"
+				:disabled="loading"
+				required
+			>
 				<option>CC</option>
 				<option>CE</option>
 				<option>Pasaporte</option>
@@ -303,9 +306,9 @@ const goToHome = (): void => {
 		<div class="mb-3">
 			<label class="form-label">Número de identificación</label>
 			<input
-				type="text"
+				type="number"
 				v-model="registerForm.idNum"
-				:disabled="isBlocked"
+				:disabled="loading"
 				class="form-control"
 				required
 			/>
@@ -316,7 +319,7 @@ const goToHome = (): void => {
 			<input
 				type="text"
 				v-model="registerForm.name"
-				:disabled="isBlocked"
+				:disabled="loading"
 				class="form-control"
 				required
 			/>
@@ -327,7 +330,7 @@ const goToHome = (): void => {
 			<input
 				type="email"
 				v-model="registerForm.email"
-				:disabled="isBlocked"
+				:disabled="loading"
 				class="form-control"
 				required
 			/>
@@ -338,7 +341,7 @@ const goToHome = (): void => {
 			<input
 				type="tel"
 				v-model="registerForm.phone"
-				:disabled="isBlocked"
+				:disabled="loading"
 				class="form-control"
 				required
 			/>
@@ -346,7 +349,12 @@ const goToHome = (): void => {
 
 		<div class="mb-3">
 			<label class="form-label">Rol</label>
-			<select class="form-select" v-model="registerForm.role" :disabled="isBlocked" required>
+			<select
+				class="form-select"
+				v-model="registerForm.role"
+				:disabled="loading"
+				required
+			>
 				<option>Huesped</option>
 				<option>Recepcionista</option>
 				<option>Administrador</option>
@@ -358,7 +366,7 @@ const goToHome = (): void => {
 			<input
 				type="password"
 				v-model="registerForm.password"
-				:disabled="isBlocked"
+				:disabled="loading"
 				class="form-control"
 				required
 			/>
@@ -369,30 +377,36 @@ const goToHome = (): void => {
 			<input
 				type="password"
 				v-model="registerForm.confirmPassword"
-				:disabled="isBlocked"
+				:disabled="loading"
 				class="form-control"
 				required
 			/>
 		</div>
 
 		<div class="d-flex justify-content-center gap-5">
-		<button type="submit" class="btn btn-primary" :disabled="loading || isBlocked">
-			{{ loading ? "Registrando..." : "Registrarse" }}
-		</button>
+			<button
+				type="submit"
+				class="btn btn-primary"
+				:disabled="loading"
+			>
+				{{ loading ? "Registrando..." : "Registrarse" }}
+			</button>
 
-		<button
-			type="button"
-			class="btn btn-secondary"
-			@click="goToHome"
-			:disabled="isBlocked"
-		>
-			Volver
-		</button>
+			<button
+				type="button"
+				class="btn btn-secondary"
+				@click="goToHome"
+				:disabled="loading"
+			>
+				Volver
+			</button>
 		</div>
 
-		<a @click="goToLogin" class="p-1 rounded"> ¿Ya tienes cuenta? Inicia sesión </a>
+		<a @click="goToLogin" class="p-1 rounded">
+			¿Ya tienes cuenta? Inicia sesión
+		</a>
 
-		<div v-if="isBlocked">
+		<div v-if="loading">
 			<ToastMessage />
 		</div>
 	</form>
