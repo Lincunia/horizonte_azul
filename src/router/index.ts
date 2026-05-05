@@ -19,6 +19,7 @@ const routes = [
 			title: "Iniciar Sesión",
 		},
 	},
+	/*
     {
         path: "/verify-email",
         name: "verify-email",
@@ -27,6 +28,7 @@ const routes = [
             title: "Verificando correo",
         },
     },
+	*/
 	{
 		path: "/register",
 		name: "register",

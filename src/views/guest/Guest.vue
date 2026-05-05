@@ -24,11 +24,11 @@ const handleLogout = async () => {
 	if (error) {
 		console.error("Error al cerrar sesión:", error);
 		useToast().showMessage("alert alert-danger", "Error al cerrar sesión");
-	} else {
+		return;
+	}
 		setTimeout(() => {
 			router.push("/login");
 		}, 1500);
-	}
 };
 
 onMounted(() => {
