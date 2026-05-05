@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
 import Modal from "../../components/Modal.vue";
-import InvoiceGuest from "./InvoiceGuest.vue";
+import GuestInvoice from "./GuestInvoice.vue";
 
 interface Reserva {
 	id_reserva: number;
@@ -38,11 +38,10 @@ const fetchReservations = async () => {
 	try {
 		const { data: userData } = await supabase.auth.getUser();
 		if (!userData.user) {
-			useToast().showMessage("error", "Usuario no autenticado");
+			useToast().showMessage("alert alert-danger", "Usuario no autenticado");
 			return;
 		}
 
-		// Obtener reservas del usuario con información de habitación y factura
 		const { data, error } = await supabase
 			.from("reservas")
 			.select(
@@ -71,7 +70,7 @@ const fetchReservations = async () => {
 		reservations.value = data || [];
 	} catch (error) {
 		console.error("Error fetching reservations:", error);
-		useToast().showMessage("error", "Error al cargar tus reservas");
+		useToast().showMessage("alert alert-danger", "Error al cargar tus reservas");
 	} finally {
 		loading.value = false;
 	}
@@ -87,7 +86,7 @@ const viewInvoice = (reserva: Reserva) => {
 		showModal.value = true;
 	} else {
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			"No hay factura disponible para esta reserva",
 		);
 	}
@@ -97,14 +96,14 @@ const closeModal = () => {
 	showModal.value = false;
 };
 
-const getEstadoColor = (estado: string) => {
-	const colors = {
-		Pendiente: "status-pending",
-		Confirmada: "status-confirmed",
-		Cancelada: "status-cancelled",
-		Completada: "status-completed",
+const getEstadoBadgeClass = (estado: string) => {
+	const classes = {
+		Pendiente: "bg-warning text-dark",
+		Confirmada: "bg-success",
+		Cancelada: "bg-danger",
+		Completada: "bg-info text-dark",
 	};
-	return colors[estado as keyof typeof colors] || "status-pending";
+	return classes[estado as keyof typeof classes] || "bg-secondary";
 };
 
 const formatDate = (date: string) => {
@@ -130,160 +129,98 @@ onMounted(() => {
 </script>
 
 <template>
-	<main>
-		<header class="dashboard">
-			<h2>📋 Mis Reservas</h2>
-			<p>Historial de todas tus reservas</p>
-		</header>
+	<header class="text-center mb-4">
+		<h2>📋 Mis Reservas</h2>
+		<p class="text-muted">Historial de todas tus reservas</p>
+	</header>
 
-		<LoaderMessage v-if="loading" message="Cargando habitaciones..." />
-		<LoaderMessage
-			v-else-if="reservations.length === 0"
-			message="😕 No tienes reservas aún"
-		/>
+	<LoaderMessage v-if="loading" message="Cargando habitaciones..." />
+	<LoaderMessage
+		v-else-if="reservations.length === 0"
+		message="😕 No tienes reservas aún"
+	/>
 
-		<ol v-else>
-			<li
-				v-for="reserva in reservations"
-				:key="reserva.id_reserva"
-				class="item-card"
-			>
-				<header>
-					<div class="room-info">
-						<span class="room-number"
-							>Habitación #{{ reserva.habitaciones.numero }}</span
-						>
-						<span class="room-type">{{ reserva.habitaciones.tipo }}</span>
-					</div>
-					<div class="status-badge" :class="getEstadoColor(reserva.estado)">
-						{{ reserva.estado }}
-					</div>
-				</header>
-
-				<div class="dates">
-					<div class="date-item">
-						<strong>Check-in:</strong>
-						<span>{{ formatDate(reserva.fecha_inicio) }}</span>
-					</div>
-					<div class="date-item">
-						<strong>Check-out:</strong>
-						<span>{{ formatDate(reserva.fecha_fin) }}</span>
-					</div>
-					<div class="date-item">
-						<strong>Huéspedes:</strong>
-						<span>{{ reserva.num_huespedes }} personas</span>
-					</div>
-				</div>
-
-				<div class="payment-info">
-					<div>
-						<strong>Total:</strong>
-						<span>{{ formatCurrency(reserva.costo_total) }}</span>
-					</div>
-
-					<button
-						v-if="reserva.facturas"
-						class="btn-secondary"
-						@click="viewInvoice(reserva)"
-					>
-						📄 Ver Factura
-					</button>
-				</div>
-			</li>
-		</ol>
-
-		<!-- Modal de factura -->
-		<Modal
-			v-model="showModal"
-			:title="`Factura electrónica`"
-			@close="closeModal"
+	<div v-else class="row g-4">
+		<div
+			v-for="reserva in reservations"
+			:key="reserva.id_reserva"
+			class="col-12 col-md-6 col-lg-4"
 		>
-			<InvoiceGuest
-				v-if="selectedReserva"
-				:factura="selectedFactura"
-				:reserva="selectedReserva"
-			/>
-		</Modal>
-	</main>
+			<div class="card h-100">
+				<!-- Header de la tarjeta -->
+				<div class="card-header bg-white border-bottom-0 pb-0">
+					<div class="d-flex justify-content-between align-items-start">
+						<div>
+							<h5 class="card-title mb-1">
+								🏠 Habitación #{{ reserva.habitaciones.numero }}
+							</h5>
+							<span class="badge bg-secondary">{{
+								reserva.habitaciones.tipo
+							}}</span>
+						</div>
+						<span :class="getEstadoBadgeClass(reserva.estado)" class="badge">
+							{{ reserva.estado }}
+						</span>
+					</div>
+				</div>
+
+				<!-- Cuerpo de la tarjeta -->
+				<div class="card-body">
+					<!-- Fechas -->
+					<div class="mb-3">
+						<div class="d-flex justify-content-between mb-2">
+							<small class="text-muted">
+								<strong>📅 Check-in:</strong>
+							</small>
+							<small>{{ formatDate(reserva.fecha_inicio) }}</small>
+						</div>
+						<div class="d-flex justify-content-between mb-2">
+							<small class="text-muted">
+								<strong>📆 Check-out:</strong>
+							</small>
+							<small>{{ formatDate(reserva.fecha_fin) }}</small>
+						</div>
+						<div class="d-flex justify-content-between">
+							<small class="text-muted">
+								<strong>👥 Huéspedes:</strong>
+							</small>
+							<small>{{ reserva.num_huespedes }} personas</small>
+						</div>
+					</div>
+
+					<!-- Separador -->
+					<hr class="my-3" />
+
+					<!-- Total y botón -->
+					<div class="d-flex justify-content-between align-items-center">
+						<div>
+							<small class="text-muted">Total</small>
+							<h6 class="mb-0 text-primary">
+								{{ formatCurrency(reserva.costo_total) }}
+							</h6>
+						</div>
+						<button
+							v-if="reserva.facturas"
+							class="btn btn-sm btn-outline-primary"
+							@click="viewInvoice(reserva)"
+						>
+							📄 Ver Factura
+						</button>
+						<button v-else class="btn btn-sm btn-secondary" disabled>
+							📄 Sin factura
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal de factura -->
+	<Modal v-model="showModal" :title="`Factura electrónica`" @close="closeModal">
+		<GuestInvoice
+			v-if="selectedReserva"
+			:factura="selectedFactura"
+			:reserva="selectedReserva"
+		/>
+	</Modal>
 </template>
-
-<style scoped>
-
-
-.room-info {
-	display: flex;
-	gap: 1rem;
-	align-items: baseline;
-}
-
-.room-number {
-	font-size: 1.25rem;
-	font-weight: bold;
-}
-
-.room-type {
-	font-size: 0.875rem;
-	opacity: 0.9;
-}
-
-.status-badge {
-	padding: 0.25rem 0.75rem;
-	border-radius: 4px;
-	font-size: 0.875rem;
-	font-weight: 500;
-}
-
-.status-pending {
-	background: var(--amarillo-principal);
-	color: var(--negro);
-}
-
-.status-confirmed {
-	background: var(--verde-oscuro);
-	color: var(--blanco);
-}
-
-.status-cancelled {
-	background: var(--rojo);
-	color: var(--blanco);
-}
-
-.status-completed {
-	background: var(--blanco);
-	color: var(--negro);
-}
-
-.status-paid {
-	background: var(--verde-claro);
-	color: var(--negro);
-}
-
-.status-refunded {
-	background: var(--rojo);
-	color: var(--blanco);
-}
-
-.reservation-body {
-	padding: 1.5rem;
-}
-
-.dates {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 1rem;
-}
-
-.date-item {
-	display: flex;
-	justify-content: space-between;
-	padding: 0.5rem;
-}
-
-.payment-info {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 1.5rem;
-	padding: 1rem;
-}
-</style>

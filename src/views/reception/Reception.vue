@@ -151,7 +151,7 @@ const crearReserva = async () => {
 		!reserva.fecha_inicio ||
 		!reserva.fecha_fin
 	) {
-		toast.showMessage("error", "Completa todos los campos");
+		toast.showMessage("alert alert-danger", "Completa todos los campos");
 		return;
 	}
 
@@ -162,7 +162,7 @@ const crearReserva = async () => {
 			reserva.fecha_fin
 		)
 	) {
-		toast.showMessage("error", "La habitación ya está reservada");
+		toast.showMessage("alert alert-danger", "La habitación ya está reservada");
 		return;
 	}
 
@@ -179,11 +179,11 @@ const crearReserva = async () => {
 			.eq("id_reserva", Number(reservaEditando.value));
 
 		if (error) {
-			toast.showMessage("error", "Error al actualizar");
+			toast.showMessage("alert alert-danger", "Error al actualizar");
 			return;
 		}
 
-		toast.showMessage("success", "Reserva actualizada");
+		toast.showMessage("alert alert-success", "Reserva actualizada");
 
 		reservaEditando.value = null;
 		await cargarReservas();
@@ -201,7 +201,7 @@ const crearReserva = async () => {
 	});
 
 	if (existe) {
-		toast.showMessage("error", "Esta reserva ya existe");
+		toast.showMessage("alert alert-danger", "Esta reserva ya existe");
 		return;
 	}
 
@@ -209,7 +209,7 @@ const crearReserva = async () => {
 		await supabase.auth.getUser();
 
 	if (userError) {
-		toast.showMessage("error", "Error obteniendo usuario");
+		toast.showMessage("alert alert-danger", "Error obteniendo usuario");
 		return;
 	}
 
@@ -232,12 +232,12 @@ const crearReserva = async () => {
 	]);
 
 	if (error) {
-		toast.showMessage("error", error.message);
+		toast.showMessage("alert alert-danger", error.message);
 		return;
 	}
 
 	await cargarReservas();
-	toast.showMessage("success", "Reserva creada");
+	toast.showMessage("alert alert-success", "Reserva creada");
 	resetForm();
 };
 
@@ -271,12 +271,12 @@ const cancelarReserva = async (id: number) => {
 		.eq("id_reserva", id);
 
 	if (error) {
-		toast.showMessage("error", "Error al cancelar la reserva");
+		toast.showMessage("alert alert-danger", "Error al cancelar la reserva");
 		return;
 	}
 
 	await cargarReservas();
-	toast.showMessage("success", "Reserva cancelada");
+	toast.showMessage("alert alert-success", "Reserva cancelada");
 };
 
 const resetForm = () => {
@@ -301,7 +301,7 @@ const checkIn = async (reserva: any) => {
 	const toast = useToast();
 
 	if (reserva.estado !== "Confirmada") {
-		toast.showMessage("error", "Solo reservas confirmadas pueden hacer check-in");
+		toast.showMessage("alert alert-danger", "Solo reservas confirmadas pueden hacer check-in");
 		return;
 	}
 
@@ -309,7 +309,7 @@ const checkIn = async (reserva: any) => {
 	const entrada = new Date(reserva.entrada);
 
 	if (hoyDate < entrada) {
-		toast.showMessage("error", "Aún no es la fecha de entrada");
+		toast.showMessage("alert alert-danger", "Aún no es la fecha de entrada");
 		return;
 	}
 
@@ -322,11 +322,11 @@ const checkIn = async (reserva: any) => {
 		.eq("id_reserva", reserva.id);
 
 	if (error) {
-		toast.showMessage("error", "Error en check-in");
+		toast.showMessage("alert alert-danger", "Error en check-in");
 		return;
 	}
 
-	toast.showMessage("success", "Check-in realizado");
+	toast.showMessage("alert alert-success", "Check-in realizado");
 	await cargarReservas();
 };
 
@@ -334,7 +334,7 @@ const checkOut = async (reserva: any) => {
 	const toast = useToast();
 
 	if (reserva.estado !== "Check-in") {
-		toast.showMessage("error", "La reserva no está en curso");
+		toast.showMessage("alert alert-danger", "La reserva no está en curso");
 		return;
 	}
 
@@ -359,11 +359,11 @@ const checkOut = async (reserva: any) => {
 
 	if (error) {
 		console.error(error);
-		toast.showMessage("error", "Error en check-out");
+		toast.showMessage("alert alert-danger", "Error en check-out");
 		return;
 	}
 
-	toast.showMessage("success", "Check-out realizado correctamente");
+	toast.showMessage("alert alert-success", "Check-out realizado correctamente");
 
 	await cargarReservas();
 };
@@ -374,14 +374,14 @@ const handleLogout = async () => {
 	const { error } = await supabase.auth.signOut();
 
 	if (error) {
-		toast.showMessage("error", "Error al cerrar sesión");
+		toast.showMessage("alert alert-danger", "Error al cerrar sesión");
 		return;
 	}
 
 	reservas.value = [];
 	habitaciones.value = [];
 
-	toast.showMessage("success", "Sesión cerrada correctamente");
+	toast.showMessage("alert alert-success", "Sesión cerrada correctamente");
 
 	router.push("/login");
 };
@@ -395,7 +395,7 @@ const generarFactura = (reserva: any) => {
 	);
 
 	if (!habitacion) {
-		toast.showMessage("error", "Habitación no encontrada");
+		toast.showMessage("alert alert-danger", "Habitación no encontrada");
 		return;
 	}
 
@@ -403,7 +403,7 @@ const generarFactura = (reserva: any) => {
 	const fin = new Date(reserva.check_out || reserva.salida);
 
 	if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
-		useToast().showMessage("error", "Fechas inválidas");
+		useToast().showMessage("alert alert-danger", "Fechas inválidas");
 		return;
 	}
 

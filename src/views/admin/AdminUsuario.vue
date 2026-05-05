@@ -93,7 +93,7 @@ const loadUsers = async () => {
 		await loadEstadisticas();
 	} catch (error: any) {
 		console.error("Error al cargar usuarios:", error);
-		useToast().showMessage("error", "Error al cargar los usuarios");
+		useToast().showMessage("alert alert-danger", "Error al cargar los usuarios");
 	} finally {
 		loading.value = false;
 	}
@@ -162,13 +162,13 @@ const createUser = async () => {
 
 		if (insertError) throw insertError;
 
-		useToast().showMessage("success", "Usuario creado exitosamente");
+		useToast().showMessage("alert alert-success", "Usuario creado exitosamente");
 		closeModal();
 		await loadUsers();
 	} catch (error: any) {
 		console.error("Error al crear usuario:", error);
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			error.message || "Error al crear el usuario",
 		);
 	}
@@ -191,13 +191,13 @@ const updateUser = async () => {
 
 		if (error) throw error;
 
-		useToast().showMessage("success", "Usuario actualizado exitosamente");
+		useToast().showMessage("alert alert-success", "Usuario actualizado exitosamente");
 		closeModal();
 		await loadUsers();
 	} catch (error: any) {
 		console.error("Error al actualizar usuario:", error);
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			error.message || "Error al actualizar el usuario",
 		);
 	}
@@ -219,12 +219,12 @@ const deleteUser = async (user: User) => {
 		// Opcional: Eliminar también de auth.users (requiere funciones de servidor)
 		// Por ahora solo eliminamos de nuestra tabla
 
-		useToast().showMessage("success", "Usuario eliminado exitosamente");
+		useToast().showMessage("alert alert-success", "Usuario eliminado exitosamente");
 		await loadUsers();
 	} catch (error: any) {
 		console.error("Error al eliminar usuario:", error);
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			error.message || "Error al eliminar el usuario",
 		);
 	}
@@ -240,7 +240,7 @@ const toggleUserStatus = async (user: User) => {
 		if (error) throw error;
 
 		useToast().showMessage(
-			"success",
+			"alert alert-success",
 			`Usuario ${user.activo ? "desactivado" : "activado"} exitosamente`,
 		);
 
@@ -248,7 +248,7 @@ const toggleUserStatus = async (user: User) => {
 	} catch (error: any) {
 		console.error("Error al cambiar estado:", error);
 
-		useToast().showMessage("error", "Error al cambiar el estado del usuario");
+		useToast().showMessage("alert alert-danger", "Error al cambiar el estado del usuario");
 	}
 };
 

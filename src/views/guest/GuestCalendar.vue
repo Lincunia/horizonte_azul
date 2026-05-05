@@ -50,7 +50,7 @@ const fetchCalendarEvents = async () => {
 		}));
 	} catch (error) {
 		console.error("Error fetching calendar events:", error);
-		useToast().showMessage("error", "Error al cargar calendario");
+		useToast().showMessage("alert alert-danger", "Error al cargar calendario");
 	} finally {
 		loading.value = false;
 	}

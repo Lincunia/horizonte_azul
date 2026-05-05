@@ -18,7 +18,7 @@ const handleLogout = async () => {
 	const { error } = await supabase.auth.signOut();
 	if (error) {
 		console.error("Error al cerrar sesión:", error);
-		useToast().showMessage("error", "Error al cerrar sesión");
+		useToast().showMessage("alert alert-danger", "Error al cerrar sesión");
 	} else {
 		router.push("/login");
 	}

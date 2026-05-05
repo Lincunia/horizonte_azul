@@ -146,7 +146,7 @@ const loadReservas = async () => {
 		reservas.value = reservasConDetalles;
 	} catch (error: any) {
 		console.error("Error al cargar reservas:", error);
-		useToast().showMessage("error", "Error al cargar las reservas");
+		useToast().showMessage("alert alert-danger", "Error al cargar las reservas");
 	}
 };
 
@@ -203,13 +203,13 @@ const updateReserva = async () => {
 
 		if (error) throw error;
 
-		useToast().showMessage("success", "Reserva actualizada exitosamente");
+		useToast().showMessage("alert alert-success", "Reserva actualizada exitosamente");
 		closeEditReservaModal();
 		await loadReservas();
 	} catch (error: any) {
 		console.error("Error al actualizar reserva:", error);
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			error.message || "Error al actualizar la reserva",
 		);
 	}
@@ -262,7 +262,7 @@ const createReserva = async () => {
 		!reservaCreateForm.value.auth_id_usuario ||
 		!reservaCreateForm.value.id_habitacion
 	) {
-		useToast().showMessage("error", "Selecciona usuario y habitación");
+		useToast().showMessage("alert alert-danger", "Selecciona usuario y habitación");
 		return;
 	}
 
@@ -309,20 +309,20 @@ const createReserva = async () => {
 		} catch (error: any) {
 			console.error("Error al crear factura:", error);
 			useToast().showMessage(
-				"error",
+				"alert alert-danger",
 				error.message || "Reserva creada pero error al crear factura",
 			);
 			return;
 		}
 		//console.log("Reserva creada:", data);
-		useToast().showMessage("success", "Reserva creada exitosamente");
+		useToast().showMessage("alert alert-success", "Reserva creada exitosamente");
 
 		closeCreateReservaModal();
 		await loadReservas();
 	} catch (error: any) {
 		console.error("Error al crear reserva:", error);
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			error.message || "Error al crear la reserva",
 		);
 	}
@@ -344,12 +344,12 @@ const deleteReserva = async (reserva: Reserva) => {
 
 		if (error) throw error;
 
-		useToast().showMessage("success", "Reserva eliminada exitosamente");
+		useToast().showMessage("alert alert-success", "Reserva eliminada exitosamente");
 		await loadReservas();
 	} catch (error: any) {
 		console.error("Error al eliminar reserva:", error);
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			error.message || "Error al eliminar la reserva",
 		);
 	}

@@ -61,18 +61,18 @@ const checkDates = (): boolean => {
 	const today = format(currentDate, "yyyy-MM-dd");
 
 	if (!newReservation.startDate) {
-		useToast().showMessage("error", "Selecciona una fecha de check-in");
+		useToast().showMessage("alert alert-danger", "Selecciona una fecha de check-in");
 		return false;
 	}
 
 	if (!newReservation.endDate) {
-		useToast().showMessage("error", "Selecciona una fecha de check-out");
+		useToast().showMessage("alert alert-danger", "Selecciona una fecha de check-out");
 		return false;
 	}
 
 	if (newReservation.startDate < today) {
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			"La fecha de check-in no puede ser anterior a hoy",
 		);
 		return false;
@@ -80,7 +80,7 @@ const checkDates = (): boolean => {
 
 	if (newReservation.startDate >= newReservation.endDate) {
 		useToast().showMessage(
-			"error",
+			"alert alert-danger",
 			"La fecha de check-out debe ser posterior a la fecha de check-in",
 		);
 		return false;
@@ -112,7 +112,7 @@ const checkAvailability = async (): Promise<boolean> => {
 				(newStartDate <= startReservation && newEndDate >= endReservation)
 			) {
 				useToast().showMessage(
-					"error",
+					"alert alert-danger",
 					"La habitación no está disponible en las fechas seleccionadas",
 				);
 				return false;
@@ -122,7 +122,7 @@ const checkAvailability = async (): Promise<boolean> => {
 		return true;
 	} catch (error) {
 		console.error("Error verificando disponibilidad:", error);
-		useToast().showMessage("error", "Error al verificar disponibilidad");
+		useToast().showMessage("alert alert-danger", "Error al verificar disponibilidad");
 		return false;
 	}
 };
@@ -172,14 +172,14 @@ const insertTablesInformation = async () => {
 
 	// Validar número de huéspedes
 	if (!newReservation.numGuests || newReservation.numGuests < 1) {
-		useToast().showMessage("error", "Ingresa un número válido de huéspedes");
+		useToast().showMessage("alert alert-danger", "Ingresa un número válido de huéspedes");
 		return;
 	}
 
 	// Obtener usuario actual
 	const { data: userData, error: userError } = await supabase.auth.getUser();
 	if (userError || !userData.user) {
-		useToast().showMessage("error", "Usuario no autenticado");
+		useToast().showMessage("alert alert-danger", "Usuario no autenticado");
 		return;
 	}
 
@@ -198,7 +198,7 @@ const insertTablesInformation = async () => {
 		// Insertar factura
 		await insertBill(reservationData.id_reserva);
 
-		useToast().showMessage("success", "Reserva creada exitosamente");
+		useToast().showMessage("alert alert-success", "Reserva creada exitosamente");
 
 		// Emitir evento y cerrar modal después de un delay
 		setTimeout(() => {
@@ -206,17 +206,7 @@ const insertTablesInformation = async () => {
 		}, 1500);
 	} catch (error: any) {
 		console.error("Error creating reservation:", error);
-
-		if (error.code === "23505") {
-			useToast().showMessage(
-				"error",
-				"Ya existe una reserva para estas fechas",
-			);
-		} else if (error.message) {
-			useToast().showMessage("error", error.message);
-		} else {
-			useToast().showMessage("error", "Error al crear reserva");
-		}
+		useToast().showMessage("alert alert-danger", error.message);
 	} finally {
 		loading.value = false;
 	}
@@ -235,87 +225,96 @@ const getMinDate = () => {
 </script>
 
 <template>
-	<form @submit.prevent="insertTablesInformation">
-		<fieldset>
-			<legend>
-				<h2>${{ pricePerNight }} / noche</h2>
-			</legend>
-			<div class="input-group">
-				<label>Fecha de Check-in</label>
-				<input
-					type="date"
-					v-model="newReservation.startDate"
-					@change="calculatePrice"
-					:min="getMinDate()"
-					required
-				/>
-			</div>
+	<form @submit.prevent="insertTablesInformation" class="container-sm">
+		<div class="mb-3">
+			<h2>${{ pricePerNight }} / noche</h2>
+		</div>
+		<div class="mb-3">
+			<label class="form-label">Fecha de Check-in</label>
+			<input
+				type="date"
+				v-model="newReservation.startDate"
+				@change="calculatePrice"
+				:min="getMinDate()"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Fecha de Check-out</label>
-				<input
-					type="date"
-					v-model="newReservation.endDate"
-					@change="calculatePrice"
-					:min="newReservation.startDate || getMinDate()"
-					required
-				/>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Fecha de Check-out</label>
+			<input
+				type="date"
+				v-model="newReservation.endDate"
+				@change="calculatePrice"
+				:min="newReservation.startDate || getMinDate()"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Número de Huéspedes</label>
-				<input
-					type="number"
-					v-model="newReservation.numGuests"
-					min="1"
-					max="10"
-					required
-				/>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Número de Huéspedes</label>
+			<input
+				type="number"
+				v-model="newReservation.numGuests"
+				min="1"
+				max="10"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Método de pago</label>
-				<select v-model="newReservation.paymentMethod" required>
-					<option value="Efectivo">Efectivo</option>
-					<option value="Tarjeta crédito">Tarjeta crédito</option>
-					<option value="Tarjeta débito">Tarjeta débito</option>
-					<option value="Transferencia">Transferencia</option>
-					<option value="Otro">Otro</option>
-				</select>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Método de pago</label>
+			<select
+				v-model="newReservation.paymentMethod"
+				class="form-select"
+				required
+			>
+				<option>Efectivo</option>
+				<option>Tarjeta crédito</option>
+				<option>Tarjeta débito</option>
+				<option>Transferencia</option>
+				<option>Otro</option>
+			</select>
+		</div>
 
-			<div class="input-group">
-				<label>Observaciones (opcional)</label>
-				<textarea
-					v-model="newReservation.observations"
-					rows="3"
-					placeholder="Requerimientos especiales..."
-				></textarea>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Observaciones (opcional)</label>
+			<textarea
+				v-model="newReservation.observations"
+				class="form-control"
+				placeholder="Requerimientos especiales..."
+			></textarea>
+		</div>
 
-			<div v-if="newReservation.totalPrice > 0">
-				<h3>Resumen de la reserva</h3>
-				<p>Habitación #{{ props.roomNumber }}</p>
-				<p>Días de estadía: {{ daysStaying }} noches</p>
-				<p>Check-in: {{ newReservation.startDate }}</p>
-				<p>Check-out: {{ newReservation.endDate }}</p>
-				<p>Huéspedes: {{ newReservation.numGuests }}</p>
-				<p>Método de pago: {{ newReservation.paymentMethod }}</p>
-				<hr />
-				<p>Subtotal: ${{ subtotal.toFixed(2) }}</p>
-				<p>Impuestos (19%): ${{ taxes.toFixed(2) }}</p>
-				<p class="total">Total: ${{ newReservation.totalPrice.toFixed(2) }}</p>
-			</div>
+		<div v-if="newReservation.totalPrice > 0">
+			<h3>Resumen de la reserva</h3>
+<ul class="list-group">
+			<li class="list-group-item">Habitación #{{ props.roomNumber }}</li>
+			<li class="list-group-item">Días de estadía: {{ daysStaying }} noches</li>
+			<li class="list-group-item">Check-in: {{ newReservation.startDate }}</li>
+			<li class="list-group-item">Check-out: {{ newReservation.endDate }}</li>
+			<li class="list-group-item">Huéspedes: {{ newReservation.numGuests }}</li>
+			<li class="list-group-item">Método de pago: {{ newReservation.paymentMethod }}</li>
+			<li class="list-group-item bg-info">Subtotal: ${{ subtotal.toFixed(2) }}</li>
+			<li class="list-group-item bg-info">Impuestos (19%): ${{ taxes.toFixed(2) }}</li>
+			<li class="list-group-item bg-warning">Total: ${{ newReservation.totalPrice.toFixed(2) }}</li>
+			</ul>
+		</div>
 
-			<button type="button" class="btn-critical" @click="cancelBook">
-				Cancelar
-			</button>
+		<div class="d-flex justify-content-center">
 
-			<button type="submit" class="btn" :disabled="loading">
-				{{ loading ? "Procesando..." : "Confirmar Reserva" }}
-			</button>
+		<button type="button" class="btn btn-danger m-2" @click="cancelBook">
+			Cancelar
+		</button>
 
-			<ToastMessage />
-		</fieldset>
+		<button type="submit" class="btn btn-success m-2" :disabled="loading">
+			{{ loading ? "Procesando..." : "Confirmar Reserva" }}
+		</button>
+		</div>
+
+		<ToastMessage />
 	</form>
 </template>

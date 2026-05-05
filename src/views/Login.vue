@@ -93,7 +93,7 @@ const handleLogin = async (): Promise<void> => {
 	} catch (error: any) {
 		console.error("Error en login:", error);
 		useToast().showMessage(
-			"alert slert-danger",
+			"alert alert-danger",
 			error.message || "Ocurrió un error durante el inicio de sesión",
 		);
 		loading.value = false;

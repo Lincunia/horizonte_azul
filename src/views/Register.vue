@@ -32,6 +32,7 @@ const registerForm = ref<RegisterForm>({
 
 const loading = ref(false);
 const timeLeft = ref(0);
+let emailToRegister: string;
 let countdownInterval: number | null = null;
 let pendingUserData: RegisterForm | null = null;
 
@@ -94,7 +95,7 @@ const handleEmailVerification = async (email?: string) => {
 		} = await supabase.auth.getUser();
 
 		if (!user || userError) {
-			throw new Error("Usuario no encontrado", userError);
+			throw new Error("Usuario no encontrado" || userError);
 		}
 
 		const { error: insertionError } = await supabase.from("usuarios").insert({
@@ -113,7 +114,7 @@ const handleEmailVerification = async (email?: string) => {
 		}
 		clearPendingRegistration();
 	} catch (error) {
-		useToast().showMessage("alert slert-danger", error.message);
+		useToast().showMessage("alert alert-danger", error.message);
 	}
 };
 
@@ -172,7 +173,7 @@ const unblockAndCleanup = () => {
 	clearPendingRegistration();
 };
 
-const startCountdown = (email: string) => {
+const startCountdown = () => {
 	if (countdownInterval) {
 		countdownInterval = null;
 		return;
@@ -187,7 +188,7 @@ const startCountdown = (email: string) => {
 		useToast().showMessage(
 			"alert alert-success",
 			`Registro exitoso. Se ha enviado un correo de verificación a ${
-			email}. Tienes ${
+			emailToRegister}. Tienes ${
 			timeLeft.value} segundos para verificarlo.`,
 			-1,
 		);
@@ -234,15 +235,16 @@ const handleRegister = async (): Promise<void> => {
 		}
 		await registerUser(registerForm.value);
 
-		pendingUserData = { ...registerForm.value };
-		delete pendingUserData["password"];
-		delete pendingUserData["confirmPassword"];
+		pendingUserData = { ...registerForm.value, "password" = "",  "confirmPassword" =""};
+		delete pendingUserData[];
+		delete pendingUserData[];
 		localStorage.setItem("pendingUserData", JSON.stringify(pendingUserData));
 		localStorage.setItem("pendingRegistrationTimestamp", Date.now().toString());
 
 		loading.value = true;
 		timeLeft.value = 60;
-		startCountdown(registerForm.value.email);
+		emailToRegister = registerForm.value.email
+		startCountdown();
 
 		useToast().showMessage(
 			"alert alert-success",

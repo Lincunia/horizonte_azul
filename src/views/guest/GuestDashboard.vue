@@ -33,7 +33,7 @@ const fetchRooms = async () => {
 		rooms.value = data || [];
 	} catch (error) {
 		console.error("Error fetching rooms:", error);
-		useToast().showMessage("error", "Error al cargar habitaciones");
+		useToast().showMessage("alert alert-danger", "Error al cargar habitaciones");
 	} finally {
 		loading.value = false;
 	}
@@ -56,7 +56,7 @@ const bookRoom = (habitacion: Room) => {
 		return;
 	}
 	useToast().showMessage(
-		"error",
+		"alert alert-danger",
 		`La habitacion #${habitacion.numero} no se encuentra libre`,
 	);
 };
@@ -73,153 +73,85 @@ onMounted(() => {
 </script>
 
 <template>
+	<header class="text-center mb-4">
+		<h2>🏨Habitaciones Disponibles</h2>
+		<p class="text-muted">Encuentra la habitación perfecta para tu estadía</p>
+	</header>
 
-	<main>
-		<header class="dashboard">
-			<h2>🏨Habitaciones Disponibles</h2>
-			<p>Encuentra la habitación perfecta para tu estadía</p>
-		</header>
+	<LoaderMessage v-if="loading" message="Cargando habitaciones..." />
+	<LoaderMessage
+		v-else-if="rooms.length === 0"
+		message="😕 No hay habitaciones disponibles en este momento"
+	/>
 
-		<LoaderMessage
-				v-if="loading"
-				message="Cargando habitaciones..."
-		/>
-		<LoaderMessage
-				v-else-if="rooms.length === 0"
-				message="😕 No hay habitaciones disponibles en este momento"
-		/>
+	<ul v-else class="row g-4">
+		<li v-for="room in rooms" :key="room.id_habitacion" class="col-12 col-md-6">
+			<div>
+				<span>{{ getTipoIcon(room.tipo) }}</span>
+				<span>Habitación #{{ room.numero }}</span>
+			</div>
 
-		<ul v-else class="rooms-grid">
-			<li v-for="room in rooms" :key="room.id_habitacion" class="room-card">
-				<div class="room-header">
-					<span class="room-icon">{{ getTipoIcon(room.tipo) }}</span>
-					<span class="room-number">Habitación #{{ room.numero }}</span>
-				</div>
+			<div class="card-body">
+				<h3 class="h4 mb-3 text-primary">{{ room.tipo }}</h3>
 
-				<div class="room-body">
-					<h3>{{ room.tipo }}</h3>
-
-					<div class="room-details">
-						<div class="detail">
+				<div class="mb-4">
+					<div class="row g-2">
+						<div
+							class="col-6 d-flex justify-content-between align-items-center p-2 bg-light"
+						>
 							<span>Capacidad:</span>
 							<span>{{ room.capacidad }} personas</span>
 						</div>
-						<div class="detail">
+						<div
+							class="col-6 d-flex justify-content-between align-items-center p-2 bg-light"
+						>
 							<span>Piso:</span>
 							<span>{{ room.piso }}°</span>
 						</div>
-						<div v-if="room.vista" class="detail">
+						<div v-if="room.vista"
+							class="col-12 d-flex justify-content-between align-items-center p-2 bg-light"
+						>
+
 							<span>Vista:</span>
 							<span>{{ room.vista }}</span>
 						</div>
-						<div class="detail">
+						<div
+							class="col-12 d-flex justify-content-between align-items-center p-2 bg-light"
+						>
 							<span>Estado:</span>
 							<span>{{ room.estado }}</span>
 						</div>
 					</div>
-
-					<div>
-						<button
-							class="btn btn-primary"
-							@click="bookRoom(room)"
-							:disabled="room.estado !== 'Libre'"
-						>
-							Reservar Ahora
-						</button>
-						<span class="price">${{ room.precio_noche }}</span>
-						<span class="per-night">/ noche</span>
-					</div>
 				</div>
-			</li>
-		</ul>
-		<!-- Modal para reservar -->
-		<Modal
-			v-model="showModal"
-			:title="`Reservar Habitación #${selectedRoom?.numero || ''}`"
-			@close="closeModal"
-		>
-			<GuestBook
-				v-if="selectedRoom"
-				:room-id="selectedRoom.id_habitacion"
-				:room-number="selectedRoom.numero"
-				:price-per-night="selectedRoom.precio_noche"
-				@reservation-complete="closeModal"
-			/>
-		</Modal>
-	</main>
+
+				<div
+					class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top"
+				>
+					<button
+						class="btn btn-primary"
+						@click="bookRoom(room)"
+						:disabled="room.estado !== 'Libre'"
+					>
+						Reservar Ahora
+					</button>
+					<span class="mb-0 text-primary">${{ room.precio_noche }}</span>
+					<span class="text-muted">/ noche</span>
+				</div>
+			</div>
+		</li>
+	</ul>
+	<!-- Modal para reservar -->
+	<Modal
+		v-model="showModal"
+		:title="`Reservar Habitación #${selectedRoom?.numero || ''}`"
+		@close="closeModal"
+	>
+		<GuestBook
+			v-if="selectedRoom"
+			:room-id="selectedRoom.id_habitacion"
+			:room-number="selectedRoom.numero"
+			:price-per-night="selectedRoom.precio_noche"
+			@reservation-complete="closeModal"
+		/>
+	</Modal>
 </template>
-
-<style scoped>
-
-ul.rooms-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-	gap: 1.5rem;
-}
-
-li.room-card {
-	background: white;
-	border-radius: 12px;
-	overflow: hidden;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.room-header {
-	background: var(--naranja);
-	padding: 1rem;
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	color: white;
-}
-
-.room-icon {
-	font-size: 1.5rem;
-}
-
-.room-number {
-	font-weight: bold;
-	background: rgba(255, 255, 255, 0.2);
-	padding: 0.25rem 0.75rem;
-	border-radius: 20px;
-	font-size: 0.875rem;
-}
-
-.room-body {
-	padding: 1.5rem;
-}
-
-.room-body h3 {
-	margin: 0 0 1rem 0;
-	color: #2c3e50;
-	font-size: 1.25rem;
-}
-
-.room-details {
-	margin-bottom: 1rem;
-}
-
-.detail {
-	display: flex;
-	justify-content: space-between;
-	padding: 0.5rem 0;
-	border-bottom: 1px solid #ecf0f1;
-}
-
-.price {
-	font-size: 1.5rem;
-	font-weight: bold;
-	color: var();
-}
-
-.per-night {
-	color: #7f8c8d;
-	font-size: 0.875rem;
-}
-
-.empty-state {
-	text-align: center;
-	padding: 3rem;
-}
-</style>
-

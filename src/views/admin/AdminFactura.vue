@@ -57,7 +57,7 @@ const loadFacturas = async () => {
 		facturas.value = (data as any) || [];
 	} catch (error: any) {
 		console.error("Error al cargar facturas:", error);
-		useToast().showMessage("error", "Error al cargar las facturas");
+		useToast().showMessage("alert alert-danger", "Error al cargar las facturas");
 	} finally {
 		loading.value = false;
 	}
@@ -73,7 +73,7 @@ const loadReservas = async () => {
 		reservas.value = (data as any) || [];
 	} catch (error: any) {
 		console.error("Error al cargar reservas:", error);
-		useToast().showMessage("error", "Error al cargar las reservas");
+		useToast().showMessage("alert alert-danger", "Error al cargar las reservas");
 	}
 };
 
@@ -102,7 +102,7 @@ const closeModal = () => {
 const saveFactura = async () => {
 	try {
 		if (!facturaForm.value.id_reserva || facturaForm.value.subtotal == null) {
-			useToast().showMessage("error", "Reserva y subtotal son requeridos");
+			useToast().showMessage("alert alert-danger", "Reserva y subtotal son requeridos");
 			return;
 		}
 
@@ -122,18 +122,18 @@ const saveFactura = async () => {
 				.eq("id_factura", editingFactura.value.id_factura);
 
 			if (error) throw error;
-			useToast().showMessage("success", "Factura actualizada exitosamente");
+			useToast().showMessage("alert alert-success", "Factura actualizada exitosamente");
 		} else {
 			const { error } = await supabase.from("facturas").insert(payload);
 			if (error) throw error;
-			useToast().showMessage("success", "Factura creada exitosamente");
+			useToast().showMessage("alert alert-success", "Factura creada exitosamente");
 		}
 
 		closeModal();
 		await loadFacturas();
 	} catch (error: any) {
 		console.error("Error al guardar factura:", error);
-		useToast().showMessage("error", error.message || "Error al guardar la factura");
+		useToast().showMessage("alert alert-danger", error.message || "Error al guardar la factura");
 	}
 };
 const facturaSeleccionada = ref<Factura | null>(null);
