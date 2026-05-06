@@ -78,11 +78,8 @@ onMounted(() => {
 		<p class="text-muted">Encuentra la habitación perfecta para tu estadía</p>
 	</header>
 
-	<LoaderMessage v-if="loading" message="Cargando habitaciones..." />
-	<LoaderMessage
-		v-else-if="rooms.length === 0"
-		message="😕 No hay habitaciones disponibles en este momento"
-	/>
+	<LoaderMessage v-if="loading" visible message="Cargando habitaciones..." />
+	<LoaderMessage v-else-if="rooms.length === 0" message="😕 No tienes reservas aún" />
 
 	<ul v-else class="row g-4">
 		<li v-for="room in rooms" :key="room.id_habitacion" class="col-12 col-md-6">

@@ -70,7 +70,10 @@ const fetchReservations = async () => {
 		reservations.value = data || [];
 	} catch (error) {
 		console.error("Error fetching reservations:", error);
-		useToast().showMessage("alert alert-danger", "Error al cargar tus reservas");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Error al cargar tus reservas",
+		);
 	} finally {
 		loading.value = false;
 	}
@@ -134,11 +137,8 @@ onMounted(() => {
 		<p class="text-muted">Historial de todas tus reservas</p>
 	</header>
 
-	<LoaderMessage v-if="loading" message="Cargando habitaciones..." />
-	<LoaderMessage
-		v-else-if="reservations.length === 0"
-		message="😕 No tienes reservas aún"
-	/>
+	<LoaderMessage v-if="loading" visible message="Cargando reservas..." />
+	<LoaderMessage v-else-if="reservations.length === 0" message="😕 No tienes reservas aún" />
 
 	<div v-else class="row g-4">
 		<div

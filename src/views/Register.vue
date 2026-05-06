@@ -20,13 +20,13 @@ interface RegisterForm {
 const router = useRouter();
 const registerForm = ref<RegisterForm>({
 	idType: "CC",
-	idNum: 1012000120,
-	name: "Anastasio",
-	email: "anastasiomurillo76@gmail.com",
-	phone: "340200020",
+	idNum: 0,
+	name: "",
+	email: "",
+	phone: "",
 	role: "Huesped",
-	password: "bolgerie",
-	confirmPassword: "bolgerie",
+	password: "",
+	confirmPassword: "",
 });
 const loading = ref(false);
 const registered = ref(false);
