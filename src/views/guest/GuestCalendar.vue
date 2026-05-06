@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import LoaderMessage from "../../components/LoaderMessage.vue";
 
 interface CalendarEvent {
 	reservationId: number;
@@ -24,8 +25,7 @@ const fetchCalendarEvents = async () => {
 
 		const { data, error } = await supabase
 			.from("reservas")
-			.select(
-				`
+			.select(`
         id_reserva,
         fecha_inicio,
         fecha_fin,
@@ -45,7 +45,7 @@ const fetchCalendarEvents = async () => {
 			title: `Hab. ${reserva.habitaciones.numero} - ${reserva.estado === "Confirmada" ? "✓" : "⏳"}`,
 			start: reserva.fecha_inicio,
 			end: reserva.fecha_fin,
-			habitacion_numero: reserva.habitaciones.numero as number,
+			habitacion_numero: reserva.habitaciones.numero,
 			estado: reserva.estado,
 		}));
 	} catch (error) {
@@ -121,10 +121,6 @@ const isToday = (day: Date | null) => {
 	);
 };
 
-const getEventClass = (estado: string) => {
-	return estado === "Confirmada" ? "event-confirmed" : "event-pending";
-};
-
 onMounted(() => {
 	fetchCalendarEvents();
 	useToast().hideMessage();
@@ -132,66 +128,76 @@ onMounted(() => {
 </script>
 
 <template>
-	<main>
-		<header class="dashboard">
-			<div>
-				<h2>📅 Calendario de Reservas</h2>
-				<p class="subtitle">Visualiza tus próximas estadías</p>
-			</div>
-			<div class="month-navigation">
-				<button @click="prevMonth" class="btn-nav">←</button>
-				<button @click="goToToday" class="btn-today">Hoy</button>
-				<button @click="nextMonth" class="btn-nav">→</button>
+	<div class="container py-4">
+		<!-- Header con controles -->
+		<header class="text-center mb-4">
+			<h2>📅 Calendario de Reservas</h2>
+			<p class="text-muted">Visualiza tus próximas estadías</p>
+			
+			<div class="btn-group" role="group">
+				<button class="btn btn-outline-secondary" @click="prevMonth">
+					← Mes anterior
+				</button>
+				<button class="btn btn-primary" @click="goToToday">
+					Hoy
+				</button>
+				<button class="btn btn-outline-secondary" @click="nextMonth">
+					Mes siguiente →
+				</button>
 			</div>
 		</header>
 
-		<div class="calendar-month">
-			<h3>
-				{{
-					currentDate.toLocaleString("es", { month: "long", year: "numeric" })
-				}}
+		<div class="text-center mb-4">
+			<h3 class="text-capitalize">
+				{{ currentDate.toLocaleString("es", { month: "long", year: "numeric" }) }}
 			</h3>
 		</div>
 
-		<div v-if="loading" class="loading">
-			<div class="spinner"></div>
-			<p>Cargando calendario...</p>
-		</div>
+		<LoaderMessage v-if="loading" message="Cargando calendario..." />
 
-		<div v-else class="calendar-container">
-			<div class="calendar-weekdays">
-				<div>Dom</div>
-				<div>Lun</div>
-				<div>Mar</div>
-				<div>Mié</div>
-				<div>Jue</div>
-				<div>Vie</div>
-				<div>Sáb</div>
+		<div v-else>
+			<!-- Días de la semana -->
+			<div class="row g-0 mb-2">
+				<div class="col weekday-header">Dom</div>
+				<div class="col weekday-header">Lun</div>
+				<div class="col weekday-header">Mar</div>
+				<div class="col weekday-header">Mié</div>
+				<div class="col weekday-header">Jue</div>
+				<div class="col weekday-header">Vie</div>
+				<div class="col weekday-header">Sáb</div>
 			</div>
 
-			<div class="calendar-days">
+			<!-- Grid de días -->
+			<div class="calendar-grid">
 				<div
 					v-for="(day, index) in getDaysInMonth(currentDate)"
 					:key="index"
-					:class="[
-						'calendar-day',
-						{
-							empty: !day,
-							today: isToday(day),
-							'has-events': day && getEventsForDay(day).length > 0,
-						},
-					]"
+					class="calendar-day-cell"
+					:class="{
+						'bg-light': !day,
+						'border-primary': day && isToday(day),
+					}"
 				>
-					<div v-if="day" class="day-content">
-						<div class="day-number">{{ day.getDate() }}</div>
-						<div v-if="getEventsForDay(day).length > 0" class="day-events">
+					<div v-if="day" class="calendar-day-content">
+						<div 
+							class="day-number mb-2"
+							:class="{ 'today-circle': isToday(day) }"
+						>
+							{{ day.getDate() }}
+						</div>
+						
+						<div v-if="getEventsForDay(day).length > 0" class="events-container">
 							<div
 								v-for="event in getEventsForDay(day)"
 								:key="event.reservationId"
-								:class="['event-badge', getEventClass(event.estado)]"
+								class="event-badge mb-1"
+								:class="{
+									'event-confirmed': event.estado === 'Confirmada',
+									'event-pending': event.estado === 'Pendiente'
+								}"
 								:title="`Habitación ${event.habitacion_numero} - ${event.estado}`"
 							>
-								{{ event.title }}
+								<small>{{ event.title }}</small>
 							</div>
 						</div>
 					</div>
@@ -199,129 +205,64 @@ onMounted(() => {
 			</div>
 		</div>
 
-		<div class="calendar-legend">
-			<div class="legend-item">
-				<span class="legend-color confirmed"></span>
-				<span>Reserva Confirmada</span>
-			</div>
-			<div class="legend-item">
-				<span class="legend-color pending"></span>
-				<span>Reserva Pendiente</span>
-			</div>
-			<div class="legend-item">
-				<span class="legend-color today"></span>
-				<span>Hoy</span>
+		<!-- Leyenda -->
+		<div class="legend-container mt-4 pt-3 border-top">
+			<div class="row justify-content-center g-3">
+				<div class="col-auto">
+					<div class="d-flex align-items-center gap-2">
+						<div class="legend-color bg-success"></div>
+						<span class="small">Reserva Confirmada</span>
+					</div>
+				</div>
+				<div class="col-auto">
+					<div class="d-flex align-items-center gap-2">
+						<div class="legend-color bg-warning"></div>
+						<span class="small">Reserva Pendiente</span>
+					</div>
+				</div>
+				<div class="col-auto">
+					<div class="d-flex align-items-center gap-2">
+						<div class="legend-color bg-primary"></div>
+						<span class="small">Hoy</span>
+					</div>
+				</div>
 			</div>
 		</div>
-	</main>
+	</div>
 </template>
 
 <style scoped>
-.guest-calendar {
-	padding: 2rem;
-	max-width: 1400px;
-	margin: 0 auto;
+.weekday-header {
+	text-align: center;
+	font-weight: 600;
+	padding: 0.75rem;
+	background-color: #f8f9fa;
+	border: 1px solid #dee2e6;
+	font-size: 0.9rem;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
 }
 
-.calendar-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 2rem;
-	flex-wrap: wrap;
-	gap: 1rem;
+.calendar-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	border: 1px solid #dee2e6;
+	border-top: none;
 }
 
-.calendar-header h2 {
-	font-size: 2rem;
-	color: #2c3e50;
-	margin-bottom: 0.5rem;
-}
-
-.subtitle {
-	color: #7f8c8d;
-}
-
-.month-navigation {
-	display: flex;
-	gap: 0.5rem;
-	align-items: center;
-}
-
-.btn-nav,
-.btn-today {
-	background: white;
-	color: #000000;
-	border: 1px solid #ddd;
-	padding: 0.5rem 1rem;
-	border-radius: 6px;
-	cursor: pointer;
+.calendar-day-cell {
+	min-height: 120px;
+	border-right: 1px solid #dee2e6;
+	border-bottom: 1px solid #dee2e6;
+	background-color: white;
 	transition: all 0.2s ease;
 }
 
-.btn-nav:hover,
-.btn-today:hover {
-	background: #667eea;
-	color: rgb(255, 255, 255);
-	border-color: #667eea;
-}
-.calendar-month {
-	text-align: center;
-	margin-bottom: 1.5rem;
+.calendar-day-cell:nth-child(7n) {
+	border-right: none;
 }
 
-.calendar-month h3 {
-	font-size: 1.5rem;
-	color: #2c3e50;
-	text-transform: capitalize;
-}
-
-.calendar-container {
-	background: white;
-	border-radius: 12px;
-	overflow: hidden;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.calendar-weekdays {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	color: white;
-}
-
-.calendar-weekdays div {
-	padding: 1rem;
-	text-align: center;
-	font-weight: 600;
-}
-
-.calendar-days {
-	display: grid;
-	grid-template-columns: repeat(7, 1fr);
-	min-height: 500px;
-}
-
-.calendar-day {
-	border-right: 1px solid #e9ecef;
-	border-bottom: 1px solid #e9ecef;
-	min-height: 100px;
-	background: white;
-}
-
-.calendar-day.empty {
-	background: #f8f9fa;
-}
-
-.calendar-day.today {
-	background: #fff3cd;
-}
-
-.calendar-day.has-events {
-	background: #f0f8ff;
-}
-
-.day-content {
+.calendar-day-content {
 	padding: 0.5rem;
 	height: 100%;
 	display: flex;
@@ -329,65 +270,56 @@ onMounted(() => {
 }
 
 .day-number {
-	font-size: 0.875rem;
-	font-weight: 600;
-	color: #2c3e50;
-	margin-bottom: 0.5rem;
-}
-
-.today .day-number {
-	color: #e74c3c;
 	font-size: 1rem;
+	font-weight: 500;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	transition: all 0.2s ease;
 }
 
-.day-events {
+.today-circle {
+	background-color: #0d6efd;
+	color: white;
+	font-weight: bold;
+}
+
+.events-container {
 	display: flex;
 	flex-direction: column;
 	gap: 0.25rem;
-	flex: 1;
 }
 
 .event-badge {
-	font-size: 0.7rem;
 	padding: 0.25rem 0.5rem;
-	border-radius: 4px;
+	border-radius: 6px;
+	font-size: 0.7rem;
+	font-weight: 500;
+	text-align: center;
+	cursor: pointer;
+	transition: transform 0.1s ease;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	cursor: pointer;
-	transition: transform 0.2s ease;
 }
 
 .event-badge:hover {
-	transform: scale(1.05);
+	transform: scale(1.02);
 }
 
 .event-confirmed {
-	background: #27ae60;
-	color: white;
+	background-color: #d1e7dd;
+	color: #0a3622;
+	border-left: 3px solid #198754;
 }
 
 .event-pending {
-	background: #f39c12;
-	color: white;
-}
-
-.calendar-legend {
-	display: flex;
-	justify-content: center;
-	gap: 2rem;
-	margin-top: 2rem;
-	padding: 1rem;
-	background: white;
-	border-radius: 8px;
-	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.legend-item {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	font-size: 0.875rem;
+	background-color: #fff3cd;
+	color: #856404;
+	border-left: 3px solid #ffc107;
 }
 
 .legend-color {
@@ -396,67 +328,63 @@ onMounted(() => {
 	border-radius: 4px;
 }
 
-.legend-color.confirmed {
-	background: #27ae60;
+/* Efecto hover en celdas */
+.calendar-day-cell:not(.bg-light):hover {
+	background-color: #f8f9fa;
+	transform: translateY(-2px);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	z-index: 1;
+	position: relative;
 }
 
-.legend-color.pending {
-	background: #f39c12;
-}
-
-.legend-color.today {
-	background: #fff3cd;
-	border: 1px solid #e74c3c;
-}
-
-.loading {
-	text-align: center;
-	padding: 3rem;
-}
-
-.spinner {
-	border: 3px solid #f3f3f3;
-	border-top: 3px solid #667eea;
-	border-radius: 50%;
-	width: 40px;
-	height: 40px;
-	animation: spin 1s linear infinite;
-	margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
-	}
-}
-
+/* Responsive */
 @media (max-width: 768px) {
-	.guest-calendar {
-		padding: 1rem;
+	.calendar-day-cell {
+		min-height: 100px;
 	}
-
-	.calendar-header {
-		flex-direction: column;
-		text-align: center;
-	}
-
-	.calendar-weekdays div {
-		padding: 0.5rem;
+	
+	.weekday-header {
 		font-size: 0.75rem;
+		padding: 0.5rem;
 	}
-
+	
+	.day-number {
+		width: 28px;
+		height: 28px;
+		font-size: 0.85rem;
+	}
+	
 	.event-badge {
 		font-size: 0.6rem;
-		padding: 0.125rem 0.25rem;
+		padding: 0.15rem 0.3rem;
+		white-space: normal;
+		word-break: break-word;
 	}
+	
+	.calendar-wrapper {
+		padding: 0.5rem;
+	}
+}
 
-	.calendar-legend {
-		flex-direction: column;
-		align-items: center;
-		gap: 0.5rem;
+@media (max-width: 576px) {
+	.calendar-day-cell {
+		min-height: 80px;
+	}
+	
+	.calendar-day-content {
+		padding: 0.25rem;
+	}
+	
+	.event-badge {
+		display: none; /* Ocultar textos en móvil muy pequeño */
+	}
+	
+	.calendar-day-cell.has-event::after {
+		content: "●";
+		display: block;
+		text-align: center;
+		color: #0d6efd;
+		font-size: 0.8rem;
 	}
 }
 </style>

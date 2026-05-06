@@ -8,7 +8,7 @@ img.logo {
 	height: auto;
 }
 
-.navbar-nav .nav-link {
+a {
 	cursor: pointer;
 }
 

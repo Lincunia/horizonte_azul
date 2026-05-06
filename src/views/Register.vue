@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
 import { useToast } from "../composables/useToast.ts";
 import ToastMessage from "../components/ToastMessage.vue";
 import logo from "../assets/logo.png";
-
-const router = useRouter();
 
 interface RegisterForm {
 	idType: "CC" | "CE" | "Pasaporte" | "Otro";
@@ -19,6 +17,7 @@ interface RegisterForm {
 	confirmPassword: string;
 }
 
+const router = useRouter();
 const registerForm = ref<RegisterForm>({
 	idType: "CC",
 	idNum: 1012000120,
@@ -29,9 +28,12 @@ const registerForm = ref<RegisterForm>({
 	password: "bolgerie",
 	confirmPassword: "bolgerie",
 });
-
 const loading = ref(false);
+const registered = ref(false);
+const phonePattern = /^(\+\d{1,3}[.\s])?\d{1,10}$/;
+const idPattern = /^\d+$/;
 
+/*
 let timeLeft = ref<number>(10);
 let intervalId = ref<number | null>(null);
 
@@ -65,25 +67,28 @@ const handleTimeOut = (): void => {
 		useToast().showMessage("alert alert-danger", "Tiempo límite sobrepasado");
 	}, 1000);
 };
+*/
 
 const registerUser = async (dataUser: RegisterForm) => {
 	const { data: authData, error: authError } = await supabase.auth.signUp({
 		email: dataUser.email,
 		password: dataUser.password,
+		options: {
+			data: {
+				name: dataUser.name,
+				tipo_identificacion: dataUser.idType,
+				numero_identificacion: dataUser.idNum,
+				telefono: dataUser.phone,
+				rol_usuario: dataUser.role,
+			},
+		},
 	});
-	if (!authData.user) {
-		throw new Error("Registro de usuario no exitoso");
-	}
-	if (authError) {
-		throw authError;
-	}
-	return authData.user;
+	if (authError) throw authError;
+	if (!authData.user) throw new Error("No se pudo crear el usuario");
 };
 
 const handleRegister = async (): Promise<void> => {
 	loading.value = true;
-	let phonePattern = /^(\+\d{1,3}[.\s])?\d{1,10}$/;
-	let idPattern = /^\d+$/;
 
 	try {
 		if (!idPattern.test(String(registerForm.value.idNum))) {
@@ -98,17 +103,24 @@ const handleRegister = async (): Promise<void> => {
 		if (registerForm.value.password.length < 6) {
 			throw new Error("La contraseña debe tener al menos 6 caracteres");
 		}
-		//await registerUser(registerForm.value);
-
+		await registerUser(registerForm.value);
 		loading.value = true;
-
-		handleTimeOut();
+		registered.value = true;
+		useToast().showMessage(
+			"alert alert-success",
+			"Registro completado. Revisa tu correo electrónico y confirma " +
+				"tu cuenta para iniciar sesión.",
+		);
+		registerForm.value.password = "";
+		registerForm.value.confirmPassword = "";
 	} catch (error: any) {
 		console.error(error);
 		useToast().showMessage(
 			"alert alert-danger",
-			error.message || "Ocurrió un error durante el registro",
+			error.message ? error.message : "Un error ocurrió durante la inserción"
 		);
+	} finally {
+		loading.value = false;
 	}
 };
 
@@ -122,12 +134,6 @@ const goToHome = (): void => {
 
 onMounted(() => {
 	useToast().hideMessage();
-});
-
-onUnmounted((): void => {
-	if (intervalId.value) {
-		clearInterval(intervalId.value);
-	}
 });
 </script>
 
