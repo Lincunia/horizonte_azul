@@ -6,6 +6,7 @@ para tratar de aprender a usar estas tecnologías:
 - Vue 3
 - TypeScript
 - Vite
+- html2pdf.js
 - Supabase
 
 Estas tecnologías están con el propósito de hacer una aplicación full-stack
@@ -17,7 +18,7 @@ para la universidad.
     <img src="./src/assets/logo.png" width="400"/>
 </div>
 
-### Autores:
+**Autores:**
  * [Lincunia](https://github.com/Lincunia)
  * [Marcoanpolo](https://github.com/Marcoanpolo)
  * [cnajerat-hash](https://github.com/cnajerat-hash)

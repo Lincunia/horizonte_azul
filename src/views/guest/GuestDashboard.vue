@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import { RoomType, RoomStatus } from "../../composables/dbInformation.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
 import Modal from "../../components/Modal.vue";
 import GuestBook from "./GuestBook.vue";
@@ -9,12 +10,12 @@ import GuestBook from "./GuestBook.vue";
 interface Room {
 	id_habitacion: number;
 	numero: number;
-	tipo: "Individual" | "Doble" | "Suite" | "Familiar";
+	tipo: RoomType;
 	capacidad: number;
 	piso: number;
 	vista: string | null;
 	precio_noche: number;
-	estado: "Libre" | "Reservada" | "Ocupada" | "Mantenimiento" | "Limpieza";
+	estado: RoomStatus;
 }
 
 const rooms = ref<Room[]>([]);

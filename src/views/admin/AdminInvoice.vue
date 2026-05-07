@@ -3,6 +3,7 @@ import { ref, computed, onMounted, nextTick } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import { usePDF } from "../../composables/usePDF.ts";
+import { useMisc } from "../../composables/useMisc.ts";
 interface Factura {
 	id_factura: number;
 	fecha_emision: string;
@@ -154,7 +155,6 @@ onMounted(() => {
 </script>
 
 <template>
-	<div>
 		<div class="admin-controls">
 			<div class="filters">
 				<input type="search" v-model="searchTerm" placeholder="Buscar por ID factura, reserva o método" />
@@ -178,23 +178,23 @@ onMounted(() => {
 
 		<div v-if="loading" class="loading-message">Cargando facturas...</div>
 
-		<table v-else class="admin-table">
+		<table v-else class="table">
 			<thead>
 				<tr>
-					<th>ID</th>
-					<th>Reserva</th>
-					<th>Fecha</th>
-					<th>Subtotal</th>
-					<th>Impuestos</th>
-					<th>Total</th>
-					<th>Método</th>
-					<th>Estado</th>
-					<th>Acciones</th>
+					<th scope="col">ID</th>
+					<th scope="col">Reserva</th>
+					<th scope="col">Fecha</th>
+					<th scope="col">Subtotal</th>
+					<th scope="col">Impuestos</th>
+					<th scope="col">Total</th>
+					<th scope="col">Método</th>
+					<th scope="col">Estado</th>
+					<th scope="col">Acciones</th>
 				</tr>
 			</thead>
 			<tbody>
 				<tr v-for="factura in filteredFacturas" :key="factura.id_factura">
-					<td>{{ factura.id_factura }}</td>
+					<td scope="row">{{ factura.id_factura }}</td>
 					<td>{{ factura.id_reserva }}</td>
 					<td>{{ factura.fecha_emision ? new Date(factura.fecha_emision).toLocaleString() : 'N/A' }}</td>
 					<td>${{ factura.subtotal }}</td>
@@ -282,7 +282,6 @@ onMounted(() => {
 				</form>
 			</div>
 		</div>
-	</div>
 </template>
 
 <style scoped>
@@ -411,13 +410,6 @@ onMounted(() => {
 	justify-content: flex-end;
 	margin-top: 1rem;
 }
-</style>
-<style scoped>
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
 .pdf-content {
   background: white;
   padding: 20px;

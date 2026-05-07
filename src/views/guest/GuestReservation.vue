@@ -2,6 +2,14 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import { useMisc } from "../../composables/useMisc.ts";
+import {
+	Invoice,
+	PaymentMethod,
+	PaymentStatus,
+	Reservation,
+	ReservationStatus,
+} from "../../composables/dbInformation.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
 import Modal from "../../components/Modal.vue";
 import GuestInvoice from "./GuestInvoice.vue";
@@ -99,16 +107,6 @@ const closeModal = () => {
 	showModal.value = false;
 };
 
-const getEstadoBadgeClass = (estado: string) => {
-	const classes = {
-		Pendiente: "bg-warning text-dark",
-		Confirmada: "bg-success",
-		Cancelada: "bg-danger",
-		Completada: "bg-info text-dark",
-	};
-	return classes[estado as keyof typeof classes] || "bg-secondary";
-};
-
 const formatDate = (date: string) => {
 	return new Date(date).toLocaleDateString("es-ES", {
 		year: "numeric",
@@ -158,7 +156,7 @@ onMounted(() => {
 								reserva.habitaciones.tipo
 							}}</span>
 						</div>
-						<span :class="getEstadoBadgeClass(reserva.estado)" class="badge">
+						<span :class="useMisc().getBookStateBadgeClass(reserva.estado)" class="badge">
 							{{ reserva.estado }}
 						</span>
 					</div>

@@ -2,6 +2,7 @@
 import { ref, reactive } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import { PaymentMethod } from "../../composables/dbInformation.ts";
 import ToastMessage from "../../components/ToastMessage.vue";
 import { format } from "date-fns";
 
@@ -17,12 +18,7 @@ interface Reservation {
 	numGuests: number;
 	observations: string;
 	totalPrice: number;
-	paymentMethod:
-		| "Efectivo"
-		| "Tarjeta crédito"
-		| "Tarjeta débito"
-		| "Transferencia"
-		| "Otro";
+	paymentMethod: PaymentMethod;
 }
 
 const emit = defineEmits<{
@@ -61,12 +57,18 @@ const checkDates = (): boolean => {
 	const today = format(currentDate, "yyyy-MM-dd");
 
 	if (!newReservation.startDate) {
-		useToast().showMessage("alert alert-danger", "Selecciona una fecha de check-in");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Selecciona una fecha de check-in",
+		);
 		return false;
 	}
 
 	if (!newReservation.endDate) {
-		useToast().showMessage("alert alert-danger", "Selecciona una fecha de check-out");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Selecciona una fecha de check-out",
+		);
 		return false;
 	}
 
@@ -122,7 +124,10 @@ const checkAvailability = async (): Promise<boolean> => {
 		return true;
 	} catch (error) {
 		console.error("Error verificando disponibilidad:", error);
-		useToast().showMessage("alert alert-danger", "Error al verificar disponibilidad");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Error al verificar disponibilidad",
+		);
 		return false;
 	}
 };
@@ -172,7 +177,10 @@ const insertTablesInformation = async () => {
 
 	// Validar número de huéspedes
 	if (!newReservation.numGuests || newReservation.numGuests < 1) {
-		useToast().showMessage("alert alert-danger", "Ingresa un número válido de huéspedes");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Ingresa un número válido de huéspedes",
+		);
 		return;
 	}
 
@@ -198,7 +206,10 @@ const insertTablesInformation = async () => {
 		// Insertar factura
 		await insertBill(reservationData.id_reserva);
 
-		useToast().showMessage("alert alert-success", "Reserva creada exitosamente");
+		useToast().showMessage(
+			"alert alert-success",
+			"Reserva creada exitosamente",
+		);
 
 		// Emitir evento y cerrar modal después de un delay
 		setTimeout(() => {
@@ -291,28 +302,27 @@ const getMinDate = () => {
 
 		<div v-if="newReservation.totalPrice > 0">
 			<h3>Resumen de la reserva</h3>
-<ul class="list-group">
-			<li class="list-group-item">Habitación #{{ props.roomNumber }}</li>
-			<li class="list-group-item">Días de estadía: {{ daysStaying }} noches</li>
-			<li class="list-group-item">Check-in: {{ newReservation.startDate }}</li>
-			<li class="list-group-item">Check-out: {{ newReservation.endDate }}</li>
-			<li class="list-group-item">Huéspedes: {{ newReservation.numGuests }}</li>
-			<li class="list-group-item">Método de pago: {{ newReservation.paymentMethod }}</li>
-			<li class="list-group-item bg-info">Subtotal: ${{ subtotal.toFixed(2) }}</li>
-			<li class="list-group-item bg-info">Impuestos (19%): ${{ taxes.toFixed(2) }}</li>
-			<li class="list-group-item bg-warning">Total: ${{ newReservation.totalPrice.toFixed(2) }}</li>
+			<ul class="list-group">
+				<li class="list-group-item">Habitación #{{ props.roomNumber }}</li>
+				<li class="list-group-item"> Días de estadía: {{ daysStaying }} noches </li>
+				<li class="list-group-item"> Check-in: {{ newReservation.startDate }} </li>
+				<li class="list-group-item">Check-out: {{ newReservation.endDate }}</li>
+				<li class="list-group-item"> Huéspedes: {{ newReservation.numGuests }} </li>
+				<li class="list-group-item"> Método de pago: {{ newReservation.paymentMethod }} </li>
+				<li class="list-group-item bg-info"> Subtotal: ${{ subtotal.toFixed(2) }} </li>
+				<li class="list-group-item bg-info"> Impuestos (19%): ${{ taxes.toFixed(2) }} </li>
+				<li class="list-group-item bg-warning"> Total: ${{ newReservation.totalPrice.toFixed(2) }} </li>
 			</ul>
 		</div>
 
 		<div class="d-flex justify-content-center">
+			<button type="button" class="btn btn-danger m-2" @click="cancelBook">
+				Cancelar
+			</button>
 
-		<button type="button" class="btn btn-danger m-2" @click="cancelBook">
-			Cancelar
-		</button>
-
-		<button type="submit" class="btn btn-success m-2" :disabled="loading">
-			{{ loading ? "Procesando..." : "Confirmar Reserva" }}
-		</button>
+			<button type="submit" class="btn btn-success m-2" :disabled="loading">
+				{{ loading ? "Procesando..." : "Confirmar Reserva" }}
+			</button>
 		</div>
 
 		<ToastMessage />

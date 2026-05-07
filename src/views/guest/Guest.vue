@@ -6,7 +6,7 @@ import { useToast } from "../../composables/useToast.ts";
 import logo from "../../assets/logo.png";
 import ToastMessage from "../../components/ToastMessage.vue";
 import GuestDashboard from "./GuestDashboard.vue";
-import GuestReservations from "./GuestReservations.vue";
+import GuestReservation from "./GuestReservation.vue";
 import GuestCalendar from "./GuestCalendar.vue";
 
 const router = useRouter();
@@ -64,7 +64,7 @@ onMounted(() => {
 
 	<main class="container py-4">
 		<GuestDashboard v-if="activeTab === 'dashboard'" />
-		<GuestReservations v-if="activeTab === 'reservations'" />
+		<GuestReservation v-if="activeTab === 'reservations'" />
 		<GuestCalendar v-if="activeTab === 'calendar'" />
 	</main>
 </template>

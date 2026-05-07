@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import { useMisc } from "../../composables/useMisc.ts";
 
 // Interfaces
 interface Habitacion {
@@ -146,7 +147,10 @@ const loadReservas = async () => {
 		reservas.value = reservasConDetalles;
 	} catch (error: any) {
 		console.error("Error al cargar reservas:", error);
-		useToast().showMessage("alert alert-danger", "Error al cargar las reservas");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Error al cargar las reservas",
+		);
 	}
 };
 
@@ -203,7 +207,10 @@ const updateReserva = async () => {
 
 		if (error) throw error;
 
-		useToast().showMessage("alert alert-success", "Reserva actualizada exitosamente");
+		useToast().showMessage(
+			"alert alert-success",
+			"Reserva actualizada exitosamente",
+		);
 		closeEditReservaModal();
 		await loadReservas();
 	} catch (error: any) {
@@ -262,7 +269,10 @@ const createReserva = async () => {
 		!reservaCreateForm.value.auth_id_usuario ||
 		!reservaCreateForm.value.id_habitacion
 	) {
-		useToast().showMessage("alert alert-danger", "Selecciona usuario y habitación");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Selecciona usuario y habitación",
+		);
 		return;
 	}
 
@@ -315,7 +325,10 @@ const createReserva = async () => {
 			return;
 		}
 		//console.log("Reserva creada:", data);
-		useToast().showMessage("alert alert-success", "Reserva creada exitosamente");
+		useToast().showMessage(
+			"alert alert-success",
+			"Reserva creada exitosamente",
+		);
 
 		closeCreateReservaModal();
 		await loadReservas();
@@ -344,7 +357,10 @@ const deleteReserva = async (reserva: Reserva) => {
 
 		if (error) throw error;
 
-		useToast().showMessage("alert alert-success", "Reserva eliminada exitosamente");
+		useToast().showMessage(
+			"alert alert-success",
+			"Reserva eliminada exitosamente",
+		);
 		await loadReservas();
 	} catch (error: any) {
 		console.error("Error al eliminar reserva:", error);
@@ -371,17 +387,20 @@ onMounted(() => {
 <template>
 	<div>
 		<!-- Controles -->
-		<div class="admin-controls">
-			<button class="btn" @click="openCreateReservaModal">
-				➕ Crear Reserva
-			</button>
-			<div class="filters">
-				<input
-					type="search"
-					v-model="searchTerm"
-					placeholder="Buscar por nombre, email o ID de reserva"
-				/>
-				<select v-model="filterEstado">
+		<div class="container">
+			<div class="mb-3">
+				<button class="btn btn-primary" @click="openCreateReservaModal">
+					➕ Crear Reserva
+				</button>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">
+					Buscar por nombre, email o ID de reserva
+				</label>
+				<input type="search" v-model="searchTerm" class="form-control" />
+			</div>
+			<div class="mb-3">
+				<select v-model="filterEstado" class="form-select">
 					<option value="todos">Todos los estados</option>
 					<option value="Pendiente">Pendiente</option>
 					<option value="Confirmada">Confirmada</option>
@@ -390,61 +409,61 @@ onMounted(() => {
 			</div>
 		</div>
 
-		<!-- Tabla de reservas -->
-		<div>
-			<h2>Reservas</h2>
-			<table class="users-table">
-				<thead>
-					<tr>
-						<th>ID Reserva</th>
-						<th>Nombre Usuario</th>
-						<th>Email Usuario</th>
-						<th>Número Habitación</th>
-						<th>Huéspedes</th>
-						<th>Fecha Reserva</th>
-						<th>Fecha Inicio</th>
-						<th>Fecha Fin</th>
-						<th>Estado</th>
-						<th>Costo Total</th>
-						<th>Acciones</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr v-for="reserva in filteredReservas" :key="reserva.id_reserva">
-						<td>{{ reserva.id_reserva }}</td>
-						<td>{{ reserva.nombre_usuario }}</td>
-						<td>{{ reserva.email_usuario }}</td>
-						<td>{{ reserva.numero_habitacion }}</td>
-						<td>{{ reserva.num_huespedes }}</td>
-						<td>{{ formatDate(reserva.fecha_reserva) }}</td>
-						<td>{{ formatDate(reserva.fecha_inicio) }}</td>
-						<td>{{ formatDate(reserva.fecha_fin) }}</td>
-						<td>
-							<span :class="['estado-badge', reserva.estado.toLowerCase()]">{{
-								reserva.estado
-							}}</span>
-						</td>
-						<td>${{ reserva.costo_total }}</td>
-						<td>
-							<button
-								class="btn"
-								@click="openEditReservaModal(reserva)"
-								title="Editar"
-							>
-								✏️
-							</button>
-							<button
-								class="btn btn-critical"
-								@click="deleteReserva(reserva)"
-								title="Eliminar"
-							>
-								🗑️
-							</button>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
+		<h2>Reservas</h2>
+		<table class="table">
+			<thead class="thead-dark">
+				<tr>
+					<th scope="col">ID Reserva</th>
+					<th scope="col">Nombre Usuario</th>
+					<th scope="col">Email Usuario</th>
+					<th scope="col">Número Habitación</th>
+					<th scope="col">Huéspedes</th>
+					<th scope="col">Fecha Reserva</th>
+					<th scope="col">Fecha Inicio</th>
+					<th scope="col">Fecha Fin</th>
+					<th scope="col">Estado</th>
+					<th scope="col">Costo Total</th>
+					<th scope="col">Acciones</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr v-for="reserva in filteredReservas" :key="reserva.id_reserva">
+					<td scope="row">{{ reserva.id_reserva }}</td>
+					<td>{{ reserva.nombre_usuario }}</td>
+					<td>{{ reserva.email_usuario }}</td>
+					<td>{{ reserva.numero_habitacion }}</td>
+					<td>{{ reserva.num_huespedes }}</td>
+					<td>{{ formatDate(reserva.fecha_reserva) }}</td>
+					<td>{{ formatDate(reserva.fecha_inicio) }}</td>
+					<td>{{ formatDate(reserva.fecha_fin) }}</td>
+					<td>
+						<span
+							:class="useMisc().getBookStateBadgeClass(reserva.estado)"
+							class="badge"
+						>
+							{{ reserva.estado }}
+						</span>
+					</td>
+					<td>${{ reserva.costo_total }}</td>
+					<td class="d-flex justify-content-between align-items-center">
+						<button
+							class="btn btn-primary me-1"
+							@click="openEditReservaModal(reserva)"
+							title="Editar"
+						>
+							✏️
+						</button>
+						<button
+							class="btn btn-danger ms-1"
+							@click="deleteReserva(reserva)"
+							title="Eliminar"
+						>
+							🗑️
+						</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
 
 		<!-- Modal para editar reserva -->
 		<div v-if="showEditReservaModal" @click.self="closeEditReservaModal">
@@ -504,7 +523,7 @@ onMounted(() => {
 					</div>
 
 					<div>
-						<button class="btn" type="submit">Actualizar</button>
+						<button class="btn btn-" type="submit">Actualizar</button>
 						<button
 							type="button"
 							class="btn btn-critical"
@@ -607,10 +626,10 @@ onMounted(() => {
 					</div>
 
 					<div>
-						<button class="btn" type="submit">Crear</button>
+						<button class="btn btn-primary" type="submit">Crear</button>
 						<button
 							type="button"
-							class="btn btn-critical"
+							class="btn btn-danger"
 							@click="closeCreateReservaModal"
 						>
 							Cancelar
@@ -621,205 +640,3 @@ onMounted(() => {
 		</div>
 	</div>
 </template>
-
-<style scoped>
-/* Controles */
-div:has(> .btn:first-child) {
-	display: flex;
-	gap: 1rem;
-	align-items: center;
-	margin-bottom: 2rem;
-	flex-wrap: wrap;
-}
-
-div:has(> .btn:first-child) .btn {
-	padding: 0.75rem 1.5rem;
-	border: none;
-	border-radius: 6px;
-	cursor: pointer;
-	font-weight: 500;
-	transition: all 0.3s ease;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-div:has(> .btn:first-child) .btn:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-div:has(> .btn:first-child) .btn-critical {
-	background: #dc2626;
-	color: white;
-}
-
-div:has(> .btn:first-child) .btn-critical:hover {
-	background: #b91c1c;
-}
-
-/* Botones en tabla */
-.users-table .btn {
-	padding: 0.5rem;
-	border: none;
-	border-radius: 4px;
-	cursor: pointer;
-	font-size: 1rem;
-	transition: all 0.2s ease;
-	margin-right: 0.25rem;
-}
-
-.users-table .btn:hover {
-	transform: scale(1.1);
-}
-
-.users-table .btn-critical {
-	background: #fee2e2;
-	color: #991b1b;
-}
-
-.users-table .btn-critical:hover {
-	background: #fecaca;
-}
-
-/* Filtros */
-.admin-controls {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 1rem;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 1.5rem;
-}
-
-.filters {
-	display: flex;
-	gap: 0.75rem;
-	flex-wrap: wrap;
-	align-items: center;
-}
-
-.filters input,
-.filters select {
-	padding: 0.75rem 1rem;
-	border: 1px solid #d1d5db;
-	border-radius: 0.5rem;
-	min-width: 180px;
-}
-
-/* Estado Badges */
-.estado-badge {
-	padding: 0.35rem 0.85rem;
-	border-radius: 9999px;
-	font-size: 0.75rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
-	display: inline-block;
-}
-
-.estado-badge.pendiente {
-	background: #fef3c7;
-	color: #92400e;
-}
-
-.estado-badge.confirmada {
-	background: #dcfce7;
-	color: #166534;
-}
-
-.estado-badge.cancelada {
-	background: #fee2e2;
-	color: #991b1b;
-}
-
-/* Modales */
-div[v-if] {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background: rgba(0, 0, 0, 0.5);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	z-index: 1000;
-}
-
-div[v-if] > div {
-	background: white;
-	padding: 2rem;
-	border-radius: 8px;
-	box-shadow:
-		0 20px 25px -5px rgba(0, 0, 0, 0.1),
-		0 10px 10px -5px rgba(0, 0, 0, 0.04);
-	max-width: 500px;
-	width: 90%;
-	max-height: 90vh;
-	overflow-y: auto;
-}
-
-div[v-if] > div > div:first-child {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 1.5rem;
-}
-
-div[v-if] > div h2 {
-	margin: 0;
-	color: #1f2937;
-	font-size: 1.5rem;
-}
-
-div[v-if] form > div {
-	margin-bottom: 1rem;
-}
-
-div[v-if] label {
-	display: block;
-	margin-bottom: 0.5rem;
-	font-weight: 500;
-	color: #374151;
-	font-size: 0.9rem;
-}
-
-div[v-if] input,
-div[v-if] select,
-div[v-if] textarea {
-	width: 100%;
-	padding: 0.75rem;
-	border: 1px solid #d1d5db;
-	border-radius: 4px;
-	font-size: 0.9rem;
-	transition: border-color 0.2s ease;
-	box-sizing: border-box;
-}
-
-div[v-if] input:focus,
-div[v-if] select:focus,
-div[v-if] textarea:focus {
-	outline: none;
-	border-color: #3b82f6;
-	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-div[v-if] textarea {
-	resize: vertical;
-	min-height: 80px;
-}
-
-div[v-if] form > div:has(> div) {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 1rem;
-}
-
-div[v-if] form > div:has(button) {
-	display: flex;
-	gap: 1rem;
-	justify-content: flex-end;
-	margin-top: 2rem;
-	padding-top: 1rem;
-	border-top: 1px solid #e5e7eb;
-}
-</style>

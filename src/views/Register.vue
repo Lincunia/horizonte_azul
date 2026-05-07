@@ -3,21 +3,21 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
 import { useToast } from "../composables/useToast.ts";
+import { IdentificationType, Role } from "../composables/dbInformation.ts";
 import ToastMessage from "../components/ToastMessage.vue";
 import logo from "../assets/logo.png";
 
 interface RegisterForm {
-	idType: "CC" | "CE" | "Pasaporte" | "Otro";
+	idType: IdentificationType,
 	idNum: number;
 	name: string;
 	email: string;
 	phone: string;
-	role: "Huesped" | "Recepcionista" | "Administrador";
+	role: Role,
 	password: string;
 	confirmPassword: string;
 }
 
-const router = useRouter();
 const registerForm = ref<RegisterForm>({
 	idType: "CC",
 	idNum: 0,
@@ -28,58 +28,23 @@ const registerForm = ref<RegisterForm>({
 	password: "",
 	confirmPassword: "",
 });
+const router = useRouter();
 const loading = ref(false);
 const registered = ref(false);
 const phonePattern = /^(\+\d{1,3}[.\s])?\d{1,10}$/;
 const idPattern = /^\d+$/;
 
-/*
-let timeLeft = ref<number>(10);
-let intervalId = ref<number | null>(null);
-
-const clearForm = (): void => {
-	registerForm.value = {
-		idType: "CC",
-		idNum: 0,
-		name: "",
-		email: "",
-		phone: "",
-		role: "Huesped",
-		password: "",
-		confirmPassword: "",
-	};
-};
-
-const handleTimeOut = (): void => {
-	intervalId.value = window.setInterval(() => {
-		if (timeLeft.value > 0) {
-			useToast().showMessage(
-				"alert alert-warning",
-				`Te quedan ${timeLeft.value} segundos`,
-			);
-			timeLeft.value--;
-			return;
-		}
-		clearInterval(intervalId.value);
-		intervalId.value = null;
-		loading.value = false;
-		clearForm();
-		useToast().showMessage("alert alert-danger", "Tiempo límite sobrepasado");
-	}, 1000);
-};
-*/
-
-const registerUser = async (dataUser: RegisterForm) => {
+const registerUser = async () => {
 	const { data: authData, error: authError } = await supabase.auth.signUp({
-		email: dataUser.email,
-		password: dataUser.password,
+		email: registerForm.value.email,
+		password: registerForm.value.password,
 		options: {
 			data: {
-				name: dataUser.name,
-				tipo_identificacion: dataUser.idType,
-				numero_identificacion: dataUser.idNum,
-				telefono: dataUser.phone,
-				rol_usuario: dataUser.role,
+				name: registerForm.value.name,
+				tipo_identificacion: registerForm.value.idType,
+				numero_identificacion: registerForm.value.idNum,
+				telefono: registerForm.value.phone,
+				rol_usuario: registerForm.value.role,
 			},
 		},
 	});
@@ -103,7 +68,7 @@ const handleRegister = async (): Promise<void> => {
 		if (registerForm.value.password.length < 6) {
 			throw new Error("La contraseña debe tener al menos 6 caracteres");
 		}
-		await registerUser(registerForm.value);
+		await registerUser();
 		loading.value = true;
 		registered.value = true;
 		useToast().showMessage(
@@ -257,8 +222,6 @@ onMounted(() => {
 			¿Ya tienes cuenta? Inicia sesión
 		</a>
 
-		<div v-if="loading">
-			<ToastMessage />
-		</div>
+		<ToastMessage />
 	</form>
 </template>
