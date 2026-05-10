@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
-import { RoomType, RoomStatus } from "../../composables/dbInformation.ts";
+import type { RoomType, RoomStatus } from "../../composables/dbInformation.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
 import Modal from "../../components/Modal.vue";
 import GuestBook from "./GuestBook.vue";

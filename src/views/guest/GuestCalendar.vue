@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import { ReservationStatus } from "../../composables/dbInformation.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
 
 interface CalendarEvent {
@@ -9,9 +10,18 @@ interface CalendarEvent {
 	title: string;
 	start: string;
 	end: string;
-	habitacion_numero: number;
-	estado: string;
+	room_number: number;
+	estado: ReservationStatus;
 }
+type ReservaWithHabitacion = {
+	id_reserva: number; 
+	fecha_inicio: string;
+	fecha_fin: string;
+	estado: ReservationStatus;
+	habitacion: {
+		numero: number;
+	};
+};
 
 const events = ref<CalendarEvent[]>([]);
 const loading = ref(true);
@@ -23,30 +33,32 @@ const fetchCalendarEvents = async () => {
 
 		if (!userData.user) return;
 
-		const { data, error } = await supabase
+		const { data, error } = (await supabase
 			.from("reservas")
-			.select(`
+			.select(
+				`
         id_reserva,
         fecha_inicio,
         fecha_fin,
         estado,
-        habitaciones (
-          numero
-        )
+        habitacion:habitaciones!inner(numero)
       `,
 			)
 			.eq("auth_id_usuario", userData.user.id)
-			.in("estado", ["Confirmada", "Pendiente"]);
+			.in("estado", ["Confirmada", "Pendiente"])) as {
+			data: ReservaWithHabitacion[] | null;
+			error: any;
+		};
 
 		if (error) throw error;
 
-		events.value = (data || []).map((reserva) => ({
-			reservationId: reserva.id_reserva,
-			title: `Hab. ${reserva.habitaciones.numero} - ${reserva.estado === "Confirmada" ? "✓" : "⏳"}`,
-			start: reserva.fecha_inicio,
-			end: reserva.fecha_fin,
-			habitacion_numero: reserva.habitaciones.numero,
-			estado: reserva.estado,
+		events.value = (data || []).map((reservation) => ({
+			reservationId: reservation.id_reserva,
+			title: `Hab. ${reservation.habitacion.numero} - ${reservation.estado === "Confirmada" ? "✓" : "⏳"}`,
+			start: reservation.fecha_inicio,
+			end: reservation.fecha_fin,
+			room_number: reservation.habitacion.numero,
+			estado: reservation.estado,
 		}));
 	} catch (error) {
 		console.error("Error fetching calendar events:", error);
@@ -133,14 +145,12 @@ onMounted(() => {
 		<header class="text-center mb-4">
 			<h2>📅 Calendario de Reservas</h2>
 			<p class="text-muted">Visualiza tus próximas estadías</p>
-			
+
 			<div class="btn-group" role="group">
 				<button class="btn btn-outline-secondary" @click="prevMonth">
 					← Mes anterior
 				</button>
-				<button class="btn btn-primary" @click="goToToday">
-					Hoy
-				</button>
+				<button class="btn btn-primary" @click="goToToday">Hoy</button>
 				<button class="btn btn-outline-secondary" @click="nextMonth">
 					Mes siguiente →
 				</button>
@@ -149,7 +159,9 @@ onMounted(() => {
 
 		<div class="text-center mb-4">
 			<h3 class="text-capitalize">
-				{{ currentDate.toLocaleString("es", { month: "long", year: "numeric" }) }}
+				{{
+					currentDate.toLocaleString("es", { month: "long", year: "numeric" })
+				}}
 			</h3>
 		</div>
 
@@ -179,23 +191,26 @@ onMounted(() => {
 					}"
 				>
 					<div v-if="day" class="calendar-day-content">
-						<div 
+						<div
 							class="day-number mb-2"
 							:class="{ 'today-circle': isToday(day) }"
 						>
 							{{ day.getDate() }}
 						</div>
-						
-						<div v-if="getEventsForDay(day).length > 0" class="events-container">
+
+						<div
+							v-if="getEventsForDay(day).length > 0"
+							class="events-container"
+						>
 							<div
 								v-for="event in getEventsForDay(day)"
 								:key="event.reservationId"
 								class="event-badge mb-1"
 								:class="{
 									'event-confirmed': event.estado === 'Confirmada',
-									'event-pending': event.estado === 'Pendiente'
+									'event-pending': event.estado === 'Pendiente',
 								}"
-								:title="`Habitación ${event.habitacion_numero} - ${event.estado}`"
+								:title="`Habitación ${event.room_number} - ${event.estado}`"
 							>
 								<small>{{ event.title }}</small>
 							</div>
@@ -342,25 +357,25 @@ onMounted(() => {
 	.calendar-day-cell {
 		min-height: 100px;
 	}
-	
+
 	.weekday-header {
 		font-size: 0.75rem;
 		padding: 0.5rem;
 	}
-	
+
 	.day-number {
 		width: 28px;
 		height: 28px;
 		font-size: 0.85rem;
 	}
-	
+
 	.event-badge {
 		font-size: 0.6rem;
 		padding: 0.15rem 0.3rem;
 		white-space: normal;
 		word-break: break-word;
 	}
-	
+
 	.calendar-wrapper {
 		padding: 0.5rem;
 	}
@@ -370,15 +385,15 @@ onMounted(() => {
 	.calendar-day-cell {
 		min-height: 80px;
 	}
-	
+
 	.calendar-day-content {
 		padding: 0.25rem;
 	}
-	
+
 	.event-badge {
 		display: none; /* Ocultar textos en móvil muy pequeño */
 	}
-	
+
 	.calendar-day-cell.has-event::after {
 		content: "●";
 		display: block;

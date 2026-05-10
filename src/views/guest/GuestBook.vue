@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
-import { PaymentMethod } from "../../composables/dbInformation.ts";
+import type { PaymentMethod } from "../../composables/dbInformation.ts";
 import ToastMessage from "../../components/ToastMessage.vue";
 import { format } from "date-fns";
 

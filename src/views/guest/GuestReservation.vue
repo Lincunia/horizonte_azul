@@ -3,11 +3,9 @@ import { ref, onMounted } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import { useMisc } from "../../composables/useMisc.ts";
-import {
-	Invoice,
+import type {
 	PaymentMethod,
 	PaymentStatus,
-	Reservation,
 	ReservationStatus,
 } from "../../composables/dbInformation.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
@@ -19,7 +17,7 @@ interface Reserva {
 	fecha_inicio: string;
 	fecha_fin: string;
 	num_huespedes: number;
-	estado: string;
+	estado: ReservationStatus;
 	costo_total: number;
 	habitaciones: {
 		numero: number;
@@ -31,8 +29,8 @@ interface Reserva {
 		subtotal: number;
 		impuestos: number;
 		total: number;
-		metodo_pago: string;
-		estado_pago: string;
+		metodo_pago: PaymentMethod;
+		estado_pago: PaymentStatus;
 	};
 }
 
@@ -52,8 +50,7 @@ const fetchReservations = async () => {
 
 		const { data, error } = await supabase
 			.from("reservas")
-			.select(
-				`
+			.select( `
 				*,
 				habitaciones (
 					numero,

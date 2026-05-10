@@ -4,13 +4,34 @@ Este proyecto es un sistema de reservas de hotel (**NO UN PROGRAMA UTILITARIO**)
 para tratar de aprender a usar estas tecnologías:
 
 - Vue 3
+- bootstrap
 - TypeScript
-- Vite
-- html2pdf.js
+- Vue-router
 - Supabase
+- html2pdf.js
+- Vite
+- vitest
 
 Estas tecnologías están con el propósito de hacer una aplicación full-stack
 para la universidad.
+
+### Instalación para desarrollo
+
+Para poder empezar a desarrollar, clona primero el repositorio:
+```sh
+git clone https://github.com/Lincunia/horizonte_azul
+cd horizonte_azul
+```
+Una vez clonado y accedido, se instalan las siguientes dependencias descritas
+en `package.json` de este modo:
+```
+npm ci
+```
+Esto sólo funciona si se encuentra presente también `package-lock.json`, en caso
+de que sólo se encuentre `package.json`, se debe usar:
+```
+npm i
+```
 
 ### Logo:
 

@@ -3,7 +3,7 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
 import { useToast } from "../composables/useToast.ts";
-import { IdentificationType, Role } from "../composables/dbInformation.ts";
+import type { IdentificationType, Role } from "../composables/dbInformation.ts";
 import ToastMessage from "../components/ToastMessage.vue";
 import logo from "../assets/logo.png";
 

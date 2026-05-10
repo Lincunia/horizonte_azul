@@ -3,15 +3,15 @@ import { ref, computed, onMounted, nextTick } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import { usePDF } from "../../composables/usePDF.ts";
-import { useMisc } from "../../composables/useMisc.ts";
+import type {PaymentStatus, PaymentMethod} from "../../composables/dbInformation.ts";
 interface Factura {
 	id_factura: number;
 	fecha_emision: string;
 	subtotal: number;
 	impuestos: number;
 	total: number;
-	metodo_pago: string | null;
-	estado_pago: string;
+	metodo_pago: PaymentMethod;
+	estado_pago: PaymentStatus;
 	id_reserva: number;
 }
 
