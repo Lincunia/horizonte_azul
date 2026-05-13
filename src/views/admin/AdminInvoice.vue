@@ -3,14 +3,15 @@ import { ref, computed, onMounted, nextTick } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import { usePDF } from "../../composables/usePDF.ts";
+import type {PaymentStatus, PaymentMethod} from "../../composables/dbInformation.ts";
 interface Factura {
 	id_factura: number;
 	fecha_emision: string;
 	subtotal: number;
 	impuestos: number;
 	total: number;
-	metodo_pago: string | null;
-	estado_pago: string;
+	metodo_pago: PaymentMethod;
+	estado_pago: PaymentStatus;
 	id_reserva: number;
 }
 
@@ -57,7 +58,7 @@ const loadFacturas = async () => {
 		facturas.value = (data as any) || [];
 	} catch (error: any) {
 		console.error("Error al cargar facturas:", error);
-		useToast().showMessage("error", "Error al cargar las facturas");
+		useToast().showMessage("alert alert-danger", "Error al cargar las facturas");
 	} finally {
 		loading.value = false;
 	}
@@ -73,7 +74,7 @@ const loadReservas = async () => {
 		reservas.value = (data as any) || [];
 	} catch (error: any) {
 		console.error("Error al cargar reservas:", error);
-		useToast().showMessage("error", "Error al cargar las reservas");
+		useToast().showMessage("alert alert-danger", "Error al cargar las reservas");
 	}
 };
 
@@ -102,7 +103,7 @@ const closeModal = () => {
 const saveFactura = async () => {
 	try {
 		if (!facturaForm.value.id_reserva || facturaForm.value.subtotal == null) {
-			useToast().showMessage("error", "Reserva y subtotal son requeridos");
+			useToast().showMessage("alert alert-danger", "Reserva y subtotal son requeridos");
 			return;
 		}
 
@@ -122,18 +123,18 @@ const saveFactura = async () => {
 				.eq("id_factura", editingFactura.value.id_factura);
 
 			if (error) throw error;
-			useToast().showMessage("success", "Factura actualizada exitosamente");
+			useToast().showMessage("alert alert-success", "Factura actualizada exitosamente");
 		} else {
 			const { error } = await supabase.from("facturas").insert(payload);
 			if (error) throw error;
-			useToast().showMessage("success", "Factura creada exitosamente");
+			useToast().showMessage("alert alert-success", "Factura creada exitosamente");
 		}
 
 		closeModal();
 		await loadFacturas();
 	} catch (error: any) {
 		console.error("Error al guardar factura:", error);
-		useToast().showMessage("error", error.message || "Error al guardar la factura");
+		useToast().showMessage("alert alert-danger", error.message || "Error al guardar la factura");
 	}
 };
 const facturaSeleccionada = ref<Factura | null>(null);
@@ -154,7 +155,6 @@ onMounted(() => {
 </script>
 
 <template>
-	<div>
 		<div class="admin-controls">
 			<div class="filters">
 				<input type="search" v-model="searchTerm" placeholder="Buscar por ID factura, reserva o método" />
@@ -178,23 +178,23 @@ onMounted(() => {
 
 		<div v-if="loading" class="loading-message">Cargando facturas...</div>
 
-		<table v-else class="admin-table">
+		<table v-else class="table">
 			<thead>
 				<tr>
-					<th>ID</th>
-					<th>Reserva</th>
-					<th>Fecha</th>
-					<th>Subtotal</th>
-					<th>Impuestos</th>
-					<th>Total</th>
-					<th>Método</th>
-					<th>Estado</th>
-					<th>Acciones</th>
+					<th scope="col">ID</th>
+					<th scope="col">Reserva</th>
+					<th scope="col">Fecha</th>
+					<th scope="col">Subtotal</th>
+					<th scope="col">Impuestos</th>
+					<th scope="col">Total</th>
+					<th scope="col">Método</th>
+					<th scope="col">Estado</th>
+					<th scope="col">Acciones</th>
 				</tr>
 			</thead>
 			<tbody>
 				<tr v-for="factura in filteredFacturas" :key="factura.id_factura">
-					<td>{{ factura.id_factura }}</td>
+					<td scope="row">{{ factura.id_factura }}</td>
 					<td>{{ factura.id_reserva }}</td>
 					<td>{{ factura.fecha_emision ? new Date(factura.fecha_emision).toLocaleString() : 'N/A' }}</td>
 					<td>${{ factura.subtotal }}</td>
@@ -282,7 +282,6 @@ onMounted(() => {
 				</form>
 			</div>
 		</div>
-	</div>
 </template>
 
 <style scoped>
@@ -411,13 +410,6 @@ onMounted(() => {
 	justify-content: flex-end;
 	margin-top: 1rem;
 }
-</style>
-<style scoped>
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
 .pdf-content {
   background: white;
   padding: 20px;

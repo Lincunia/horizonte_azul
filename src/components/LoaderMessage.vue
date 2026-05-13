@@ -1,39 +1,17 @@
 <script setup lang="ts">
-const props = defineProps<{
+interface Props {
+	visible?: boolean;
 	message?: string;
-	}>();
-
+}
+const props = withDefaults(defineProps<Props>(), {
+	visible: false,
+	message: "",
+});
 </script>
 
 <template>
-	<div class="loading">
-		<div class="spinner"></div>
-		<p v-if="message"> {{ message }} </p>
+	<div class="text-center mb-4">
+		<div v-if="visible" class="spinner-border text-primary" role="status"></div>
+		<p v-if="message">{{ message }}</p>
 	</div>
 </template>
-
-<style scoped>
-.loading {
-	text-align: center;
-	padding: 3rem;
-}
-
-.spinner {
-	border: 3px solid #f3f3f3;
-	border-top: 3px solid #667eea;
-	border-radius: 50%;
-	width: 40px;
-	height: 40px;
-	animation: spin 1s linear infinite;
-	margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
-	}
-}
-</style>

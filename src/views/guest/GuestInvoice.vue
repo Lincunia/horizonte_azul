@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { usePDF } from "../../composables/usePDF.ts";
+import {
+	calculuateDaysStaying,
+	calculateUnitValue,
+} from "../../composables/reservationMethods.ts";
 
 interface Factura {
 	id_factura: number;
@@ -55,48 +59,57 @@ const formatCurrency = (amount: number) => {
 </script>
 
 <template>
-	<main ref="pdfRef">
-		<header class="dashboard">
+	<main ref="pdfRef" class="container-sm">
+		<div class="mb-3 text-center">
 			<h1>HOTEL HORIZONTE AZUL</h1>
 			<!-- Dirección con NIT, calle y Teléfono -->
-		</header>
+		</div>
 
 		<section v-if="factura && reserva">
-			<ul>
-				<li><strong>Factura N°:</strong> {{ factura.id_factura }}</li>
-				<li>
+			<h3>Resumen de la factura</h3>
+			<ul class="list-group">
+				<li class="list-group-item">
+					<strong>Factura N°:</strong> {{ factura.id_factura }}
+				</li>
+				<li class="list-group-item">
 					<strong>Fecha:</strong>
 					{{ formatDate(factura.fecha_emision) }}
 				</li>
-				<li><strong>Reserva N°:</strong> {{ reserva.id_reserva }}</li>
-				<li><strong>Estado:</strong> {{ factura.estado_pago }}</li>
-				<li>
+				<li class="list-group-item">
+					<strong>Reserva N°:</strong> {{ reserva.id_reserva }}
+				</li>
+				<li class="list-group-item">
+					<strong>Estado:</strong> {{ factura.estado_pago }}
+				</li>
+				<li class="list-group-item">
 					<strong>Habitación:</strong> #{{ reserva.habitaciones.numero }} -
 					{{ reserva.habitaciones.tipo }}
 				</li>
-				<li>
+				<li class="list-group-item">
 					<strong>Huéspedes:</strong>
 					{{ reserva.num_huespedes }} personas
 				</li>
-				<li>
+				<li class="list-group-item">
 					<strong>Check-in:</strong>
 					{{ formatDate(reserva.fecha_inicio) }}
 				</li>
-				<li>
+				<li class="list-group-item">
 					<strong>Check-out:</strong>
 					{{ formatDate(reserva.fecha_fin) }}
 				</li>
-				<li><strong>Método de pago:</strong> {{ factura.metodo_pago }}</li>
+				<li class="list-group-item">
+					<strong>Método de pago:</strong> {{ factura.metodo_pago }}
+				</li>
 			</ul>
 		</section>
 
-		<table>
-			<thead>
+		<table class="table">
+			<thead class="thead-dark">
 				<tr>
-					<th>Descripción</th>
-					<th>Cantidad</th>
-					<th>Valor Unitario</th>
-					<th>Total</th>
+					<th scope="col">Descripción</th>
+					<th scope="col">Cantidad</th>
+					<th scope="col">Valor Unitario</th>
+					<th scope="col">Total</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -104,10 +117,9 @@ const formatCurrency = (amount: number) => {
 					<td>Estadía en habitación #{{ reserva?.habitaciones.numero }}</td>
 					<td>
 						{{
-							Math.ceil(
-								(new Date(reserva?.fecha_fin || "").getTime() -
-									new Date(reserva?.fecha_inicio || "").getTime()) /
-									(1000 * 60 * 60 * 24),
+							calculuateDaysStaying(
+								reserva.fecha_inicio,
+								reserva.fecha_fin,
 							)
 						}}
 						noches
@@ -115,10 +127,12 @@ const formatCurrency = (amount: number) => {
 					<td>
 						{{
 							formatCurrency(
-								(factura?.subtotal || 0)/
-									Math.ceil(
-										(new Date(reserva?.fecha_fin || "").getTime() -
-											new Date(reserva?.fecha_inicio || "").getTime()) / (1000 * 60 * 60 * 24)))
+								calculateUnitValue(
+									factura.subtotal,
+									reserva.fecha_inicio,
+									reserva.fecha_fin,
+								),
+							)
 						}}
 					</td>
 					<td>
@@ -128,22 +142,24 @@ const formatCurrency = (amount: number) => {
 			</tbody>
 		</table>
 
-		<ul class="sumary-list">
-			<li>Subtotal: {{ formatCurrency(factura?.subtotal || 0) }}</li>
-			<li>IVA (19%): {{ formatCurrency(factura?.impuestos || 0) }}</li>
-			<li>
-				<strong>
-					Total a pagar: {{ formatCurrency(factura?.total || 0) }}
-				</strong>
+		<ul class="list-group">
+			<li class="list-group-item bg-info">
+				Subtotal: {{ formatCurrency(factura?.subtotal || 0) }}
+			</li>
+			<li class="list-group-item bg-info">
+				IVA (19%): {{ formatCurrency(factura?.impuestos || 0) }}
+			</li>
+			<li class="list-group-item bg-info">
+				Total a pagar: {{ formatCurrency(factura?.total || 0) }}
 			</li>
 		</ul>
 	</main>
-	<footer>
-		<p>¡Gracias por preferirnos!</p>
+	<footer class="text-center m-3">
+		<h3>¡Gracias por preferirnos!</h3>
 		<p>Esta factura es un comprobante de pago válido</p>
 		<button
 			type="button"
-			class="btn"
+			class="btn btn-secondary"
 			@click="usePDF().exportarPdf(`factura_reserva.pdf`, pdfRef)"
 		>
 			🖨️ Imprimir Factura

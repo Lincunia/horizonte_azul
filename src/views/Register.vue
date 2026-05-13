@@ -1,23 +1,19 @@
 <script setup lang="ts">
-/*
- * Do a Compostable MATAFAKA
- */
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../lib/supabaseClient.ts";
 import { useToast } from "../composables/useToast.ts";
+import type { IdentificationType, Role } from "../composables/dbInformation.ts";
 import ToastMessage from "../components/ToastMessage.vue";
 import logo from "../assets/logo.png";
 
-const router = useRouter();
-
 interface RegisterForm {
-	idType: "CC" | "CE" | "Pasaporte" | "Otro";
+	idType: IdentificationType,
 	idNum: number;
 	name: string;
 	email: string;
 	phone: string;
-	role: "Huesped" | "Recepcionista" | "Administrador";
+	role: Role,
 	password: string;
 	confirmPassword: string;
 }
@@ -32,198 +28,37 @@ const registerForm = ref<RegisterForm>({
 	password: "",
 	confirmPassword: "",
 });
-
+const router = useRouter();
 const loading = ref(false);
-const isBlocked = ref(false);
-const timeLeft = ref(0);
-let countdownInterval: number | null = null;
-let pendingUserData: RegisterForm | null = null;
+const registered = ref(false);
+const phonePattern = /^(\+\d{1,3}[.\s])?\d{1,10}$/;
+const idPattern = /^\d+$/;
 
-onUnmounted(() => {
-	if (countdownInterval) {
-		clearInterval(countdownInterval);
-	}
-});
-
-onMounted(async () => {
-	// Obtener la URL actual para verificación de correo
-	const hashParams = new URLSearchParams(window.location.hash.substring(1));
-	const accessToken = hashParams.get("access_token");
-
-	if (accessToken) {
-		const { data, error } = await supabase.auth.setSession({
-			access_token: accessToken,
-			refresh_token: hashParams.get("refresh_token") || "",
-		});
-
-		if (error) {
-			console.error("Error al confirmar correo:", error);
-			useToast().showMessage(
-				"error",
-				"Error al verificar tu cuenta. Intenta iniciar sesión.",
-			);
-			unblockAndCleanup();
-		} else {
-			await handleEmailVerification(data.user?.email);
-
-			useToast().showMessage(
-				"success",
-				"¡Correo verificado! Ya puedes iniciar sesión.",
-			);
-			window.location.hash = "";
-			unblockAndCleanup();
-			setTimeout(() => router.push("/login"), 2000);
-		}
-	} else {
-		const {
-			data: { session },
-		} = await supabase.auth.getSession();
-		if (session) {
-			router.push("/");
-		}
-	}
-	checkPendingRegistration();
-});
-
-const handleEmailVerification = async (email?: string) => {
-	// Recuperar datos pendientes del localStorage
-	const pendingDataJson = localStorage.getItem("pendingUserData");
-	if (!pendingDataJson || !email) return;
-
-	const pendingData: RegisterForm = JSON.parse(pendingDataJson);
-	if (pendingData.email !== email) return;
-
-	// Esperar un momento para que la sesión se establezca completamente
-	await new Promise((resolve) => setTimeout(resolve, 1000));
-
-	try {
-		const {
-			data: { user },
-			error: userError,
-		} = await supabase.auth.getUser();
-
-		if (!user || userError) {
-			throw new Error("Usuario no encontrado");
-		}
-
-		const { error: insertionError } = await supabase.from("usuarios").insert({
-			tipo_identificacion: pendingData.idType,
-			numero_identificacion: pendingData.idNum,
-			nombre: pendingData.name,
-			email: pendingData.email,
-			telefono: pendingData.phone,
-			rol_usuario: pendingData.role,
-			auth_id: user.id,
-		});
-
-		if (insertionError) {
-			console.error("Error al insertar usuario:", insertionError);
-			await supabase.auth.admin.deleteUser(user.id);
-			throw insertionError;
-		}
-		clearPendingRegistration();
-	} catch (error) {
-		console.error("Error en verificación:", error);
-		useToast().showMessage(
-			"error",
-			"Error al completar el registro. Por favor, contacta al soporte.",
-		);
-	}
-};
-
-const checkPendingRegistration = () => {
-	const pendingData = localStorage.getItem("pendingUserData");
-	const pendingTimestamp = localStorage.getItem("pendingRegistrationTimestamp");
-
-	if (pendingData && pendingTimestamp) {
-		const timeElapsed = Date.now() - parseInt(pendingTimestamp);
-		const remainingTime = 60 - Math.floor(timeElapsed / 1000);
-
-		if (remainingTime > 0) {
-			pendingUserData = JSON.parse(pendingData);
-			timeLeft.value = remainingTime;
-			startCountdown();
-			isBlocked.value = true;
-			useToast().showMessage(
-				"info",
-				`Registro pendiente de verificación. Tienes ${remainingTime} segundos para verificar tu correo.`,
-			);
-		} else {
-			clearPendingRegistration();
-			useToast().showMessage(
-				"error",
-				"El tiempo para verificar el registro ha expirado. Por favor, regístrate nuevamente.",
-			);
-		}
-	}
-};
-
-const startCountdown = () => {
-	if (countdownInterval) {
-		clearInterval(countdownInterval);
-	}
-
-	countdownInterval = setInterval(() => {
-		if (timeLeft.value > 0) {
-			timeLeft.value--;
-		} else {
-			clearInterval(countdownInterval!);
-			countdownInterval = null;
-			handleTimeout();
-		}
-	}, 1000);
-};
-
-const handleTimeout = async () => {
-	isBlocked.value = false;
-	timeLeft.value = 0;
-	clearPendingRegistration();
-	useToast().showMessage(
-		"error",
-		"Tiempo de verificación expirado. Por favor, regístrate nuevamente.",
-	);
-};
-
-const clearPendingRegistration = () => {
-	localStorage.removeItem("pendingUserData");
-	localStorage.removeItem("pendingRegistrationTimestamp");
-	pendingUserData = null;
-	if (countdownInterval) {
-		clearInterval(countdownInterval);
-		countdownInterval = null;
-	}
-};
-
-const unblockAndCleanup = () => {
-	isBlocked.value = false;
-	timeLeft.value = 0;
-	clearPendingRegistration();
-};
-
-const registerUser = async (dataUser: RegisterForm) => {
+const registerUser = async () => {
 	const { data: authData, error: authError } = await supabase.auth.signUp({
-		email: dataUser.email,
-		password: dataUser.password,
+		email: registerForm.value.email,
+		password: registerForm.value.password,
 		options: {
-			emailRedirectTo: `${window.location.origin}/verify-email`,
+			data: {
+				name: registerForm.value.name,
+				tipo_identificacion: registerForm.value.idType,
+				numero_identificacion: registerForm.value.idNum,
+				telefono: registerForm.value.phone,
+				rol_usuario: registerForm.value.role,
+			},
 		},
 	});
-
-	if (authError) {
-		throw authError;
-	}
-
-	if (!authData.user) {
-		throw new Error("Registro de usuario no exitoso");
-	}
-	return authData.user;
+	if (authError) throw authError;
+	if (!authData.user) throw new Error("No se pudo crear el usuario");
 };
 
 const handleRegister = async (): Promise<void> => {
 	loading.value = true;
-	let phonePattern = /^(\+\d{1,3}[.\s])?\d{1,10}$/;
 
 	try {
+		if (!idPattern.test(String(registerForm.value.idNum))) {
+			throw new Error("Identificación no válida");
+		}
 		if (!phonePattern.test(registerForm.value.phone)) {
 			throw new Error("Teléfono no válido");
 		}
@@ -233,46 +68,22 @@ const handleRegister = async (): Promise<void> => {
 		if (registerForm.value.password.length < 6) {
 			throw new Error("La contraseña debe tener al menos 6 caracteres");
 		}
-		await registerUser(registerForm.value);
-
-		pendingUserData = { ...registerForm.value };
-		localStorage.setItem("pendingUserData", JSON.stringify(pendingUserData));
-		localStorage.setItem("pendingRegistrationTimestamp", Date.now().toString());
-
-		isBlocked.value = true;
-		timeLeft.value = 60;
-		startCountdown();
-
+		await registerUser();
+		loading.value = true;
+		registered.value = true;
 		useToast().showMessage(
-			"success",
-			`Registro exitoso. Se ha enviado un correo de verificación a ${registerForm.value.email}. Tienes ${timeLeft.value} segundos para verificarlo.`,
+			"alert alert-success",
+			"Registro completado. Revisa tu correo electrónico y confirma " +
+				"tu cuenta para iniciar sesión.",
 		);
-
-		registerForm.value = {
-			idType: "CC",
-			idNum: 0,
-			name: "",
-			email: "",
-			phone: "",
-			role: "Huesped",
-			password: "",
-			confirmPassword: "",
-		};
+		registerForm.value.password = "";
+		registerForm.value.confirmPassword = "";
 	} catch (error: any) {
 		console.error(error);
-		if (error.message.includes("already registered")) {
-			useToast().showMessage(
-				"error",
-				"Este correo electrónico ya está registrado.",
-			);
-		} else if (error.code === "23505") {
-			useToast().showMessage("error", "Ya existe un usuario con esos datos.");
-		} else {
-			useToast().showMessage(
-				"error",
-				error.message || "Ocurrió un error durante el registro",
-			);
-		}
+		useToast().showMessage(
+			"alert alert-danger",
+			error.message ? error.message : "Un error ocurrió durante la inserción"
+		);
 	} finally {
 		loading.value = false;
 	}
@@ -285,114 +96,132 @@ const goToLogin = (): void => {
 const goToHome = (): void => {
 	router.push("/");
 };
+
+onMounted(() => {
+	useToast().hideMessage();
+});
 </script>
 
 <template>
-	<form @submit.prevent="handleRegister">
-		<fieldset>
-			<legend>
-				<img v-if="logo" :src="logo" class="logo" alt="Logo" />
+	<header class="text-center">
+		<img v-if="logo" :src="logo" class="logo" alt="Logo" />
+		<h2>Registro</h2>
+	</header>
+	<form @submit.prevent="handleRegister" class="container-sm col-4">
+		<div class="mb-3">
+			<label class="form-label">Tipo de identificación</label>
+			<select
+				class="form-select"
+				v-model="registerForm.idType"
+				:disabled="loading"
+				required
+			>
+				<option>CC</option>
+				<option>CE</option>
+				<option>Pasaporte</option>
+				<option>Otro</option>
+			</select>
+		</div>
 
-				<h2>Registro</h2>
-			</legend>
+		<div class="mb-3">
+			<label class="form-label">Número de identificación</label>
+			<input
+				type="number"
+				v-model="registerForm.idNum"
+				:disabled="loading"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Tipo de identificación</label>
-				<select v-model="registerForm.idType" :disabled="isBlocked" required>
-					<option>CC</option>
-					<option>CE</option>
-					<option>Pasaporte</option>
-					<option>Otro</option>
-				</select>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Nombre</label>
+			<input
+				type="text"
+				v-model="registerForm.name"
+				:disabled="loading"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Número de identificación</label>
-				<input
-					type="text"
-					v-model="registerForm.idNum"
-					:disabled="isBlocked"
-					required
-				/>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Email</label>
+			<input
+				type="email"
+				v-model="registerForm.email"
+				:disabled="loading"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Nombre</label>
-				<input
-					type="text"
-					v-model="registerForm.name"
-					:disabled="isBlocked"
-					required
-				/>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Teléfono</label>
+			<input
+				type="tel"
+				v-model="registerForm.phone"
+				:disabled="loading"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Email</label>
-				<input
-					type="email"
-					v-model="registerForm.email"
-					:disabled="isBlocked"
-					required
-				/>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Rol</label>
+			<select
+				class="form-select"
+				v-model="registerForm.role"
+				:disabled="loading"
+				required
+			>
+				<option>Huesped</option>
+				<option>Recepcionista</option>
+				<option>Administrador</option>
+			</select>
+		</div>
 
-			<div class="input-group">
-				<label>Teléfono</label>
-				<input
-					type="tel"
-					v-model="registerForm.phone"
-					:disabled="isBlocked"
-					required
-				/>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Contraseña</label>
+			<input
+				type="password"
+				v-model="registerForm.password"
+				:disabled="loading"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Rol</label>
-				<select v-model="registerForm.role" :disabled="isBlocked" required>
-					<option>Huesped</option>
-					<option>Recepcionista</option>
-					<option>Administrador</option>
-				</select>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">Confirmar Contraseña</label>
+			<input
+				type="password"
+				v-model="registerForm.confirmPassword"
+				:disabled="loading"
+				class="form-control"
+				required
+			/>
+		</div>
 
-			<div class="input-group">
-				<label>Contraseña</label>
-				<input
-					type="password"
-					v-model="registerForm.password"
-					:disabled="isBlocked"
-					required
-				/>
-			</div>
-
-			<div class="input-group">
-				<label>Confirmar Contraseña</label>
-				<input
-					type="password"
-					v-model="registerForm.confirmPassword"
-					:disabled="isBlocked"
-					required
-				/>
-			</div>
-
-			<button type="submit" class="btn" :disabled="loading || isBlocked">
+		<div class="d-flex justify-content-center gap-5">
+			<button type="submit" class="btn btn-primary" :disabled="loading">
 				{{ loading ? "Registrando..." : "Registrarse" }}
 			</button>
 
 			<button
 				type="button"
-				class="btn-secondary"
+				class="btn btn-secondary"
 				@click="goToHome"
-				:disabled="isBlocked"
+				:disabled="loading"
 			>
 				Volver
 			</button>
+		</div>
 
-			<a @click="goToLogin"> ¿Ya tienes cuenta? Inicia sesión </a>
+		<a @click="goToLogin" class="p-1 rounded">
+			¿Ya tienes cuenta? Inicia sesión
+		</a>
 
-			<div v-if="isBlocked">
-				<ToastMessage />
-			</div>
-		</fieldset>
+		<ToastMessage />
 	</form>
 </template>

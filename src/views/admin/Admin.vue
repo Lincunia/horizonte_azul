@@ -3,27 +3,31 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { supabase } from "../../lib/supabaseClient";
 import { useToast } from "../../composables/useToast.ts";
-import AdminUsuario from "./AdminUsuario.vue";
-import AdminReserva from "./AdminReserva.vue";
-import AdminHabitacion from "./AdminHabitacion.vue";
-import AdminFactura from "./AdminFactura.vue";
+import logo from "../../assets/logo.png";
+import AdminUser from "./AdminUser.vue";
+import AdminReservation from "./AdminReservation.vue";
+import AdminRoom from "./AdminRoom.vue";
+import AdminInvoice from "./AdminInvoice.vue";
 import ToastMessage from "../../components/ToastMessage.vue";
 
-const router = useRouter();
-const activeTab = ref<"usuarios" | "reservas" | "habitaciones" | "facturas">(
-	"usuarios",
-);
+const tabs = [
+	{ id: "users", name: "Usuarios" },
+	{ id: "reservations", name: "Reservas" },
+	{ id: "rooms", name: "Habitaciones" },
+	{ id: "invoices", name: "Facturas" },
+];
+const activeTab = ref(tabs[0]?.id || "users");
 
+const router = useRouter();
 const handleLogout = async () => {
 	const { error } = await supabase.auth.signOut();
 	if (error) {
 		console.error("Error al cerrar sesión:", error);
-		useToast().showMessage("error", "Error al cerrar sesión");
-	} else {
-		router.push("/login");
+		useToast().showMessage("alert alert-danger", "Error al cerrar sesión");
+		return;
 	}
+	setTimeout(() => router.push("/login"), 1500);
 };
-
 
 onMounted(() => {
 	useToast().hideMessage();
@@ -31,58 +35,34 @@ onMounted(() => {
 </script>
 
 <template>
-	<div>
-		<!-- Header -->
-		<div class="navbar">
-			<h1>Panel de Administración</h1>
-			<div>
-				<button class="btn btn-critical" @click="handleLogout">
-					Cerrar Sesión
-				</button>
-			</div>
+	<nav class="navbar navbar-expand-lg navbar-light bg-light p-4">
+		<div class="navbar-brand">
+			<img v-if="logo" :src="logo" width="30" height="30" alt="Logo" />
+			Panel de Administración
+		</div>
+		<div class="collapse navbar-collapse">
+			<ul class="navbar-nav">
+				<li
+					v-for="tab in tabs"
+					class="nav-item"
+					:class="{ active: activeTab === tab.id }"
+				>
+					<a class="nav-link" @click.prevent="activeTab = tab.id" role="button">
+						{{ tab.name }}
+					</a>
+				</li>
+			</ul>
 		</div>
 
-		<!-- Mensajes -->
-		<ToastMessage />
+		<button class="btn btn-danger" @click="handleLogout">Cerrar Sesión</button>
+	</nav>
 
-		<!-- Pestañas -->
-		<nav class="tabs">
-			<li
-				class="tab"
-				:class="{ active: activeTab === 'usuarios' }"
-				@click="activeTab = 'usuarios'"
-			>
-				Usuarios
-			</li>
-			<li
-				class="tab"
-				:class="{ active: activeTab === 'reservas' }"
-				@click="activeTab = 'reservas'"
-			>
-				Reservas
-			</li>
-			<li
-				class="tab"
-				:class="{ active: activeTab === 'habitaciones' }"
-				@click="activeTab = 'habitaciones'"
-			>
-				Habitaciones
-			</li>
-			<li
-				class="tab"
-				:class="{ active: activeTab === 'facturas' }"
-				@click="activeTab = 'facturas'"
-			>
-				Facturas
-			</li>
-		</nav>
+	<ToastMessage />
 
-		<!-- Contenido de pestañas -->
-		<div class="tab-content">
-			<AdminUsuario v-if="activeTab === 'usuarios'" />
-			<AdminReserva v-if="activeTab === 'reservas'" />
-			<AdminHabitacion v-if="activeTab === 'habitaciones'" />
-			<AdminFactura v-if="activeTab === 'facturas'" />
-		</div>
-	</div>
+	<main class="container py-4">
+		<AdminUser v-if="activeTab === 'users'" />
+		<AdminReservation v-if="activeTab === 'reservations'" />
+		<AdminRoom v-if="activeTab === 'rooms'" />
+		<AdminInvoice v-if="activeTab === 'invoices'" />
+	</main>
 </template>

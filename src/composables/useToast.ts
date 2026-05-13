@@ -1,17 +1,19 @@
 import { ref, type Ref } from "vue";
 
+type messageClass = "alert alert-success" | "alert alert-danger" | "alert alert-warning";
+
 export interface ToastMessage {
-	type: "success" | "error" | "info";
+	type: messageClass;
 	text: string;
 }
 
-// Estado global para el toast
 const message = ref<ToastMessage | null>(null);
+
 let timeoutId: number | null = null;
 
 export function useToast() {
 	const showMessage = (
-		type: "success" | "error" | "info",
+		type: messageClass = "alert alert-warning",
 		text: string,
 		duration: number = 5000,
 	) => {
@@ -20,7 +22,7 @@ export function useToast() {
 			clearTimeout(timeoutId);
 		}
 
-		message.value = { type, text };
+		//message.value = { type, text };
 
 		if(duration === -1){
 			return;

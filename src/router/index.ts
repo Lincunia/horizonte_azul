@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { supabase } from "../lib/supabaseClient.ts";
+import type { RouteLocationNormalized } from "vue-router";
+import { supabase } from "../lib/supabaseClient";
 
 const routes = [
 	{
@@ -7,7 +8,6 @@ const routes = [
 		name: "home",
 		component: () => import("../views/Home.vue"),
 		meta: {
-			requiresAuth: false,
 			title: "Horizonte Azul - Página principal",
 		},
 	},
@@ -19,20 +19,11 @@ const routes = [
 			title: "Iniciar Sesión",
 		},
 	},
-    {
-        path: "/verify-email",
-        name: "verify-email",
-        component: () => import("../views/VerifyEmail.vue"),
-        meta: {
-            title: "Verificando correo",
-        },
-    },
 	{
 		path: "/register",
 		name: "register",
 		component: () => import("../views/Register.vue"),
 		meta: {
-			requiresAuth: false,
 			title: "Registrarse",
 		},
 	},
@@ -42,7 +33,7 @@ const routes = [
 		component: () => import("../views/reception/Reception.vue"),
 		meta: {
 			requiresAuth: true,
-			requiresReception: true,
+			role: "Recepcionista",
 			title: "Panel de Recepción",
 		},
 	},
@@ -52,7 +43,7 @@ const routes = [
 		component: () => import("../views/admin/Admin.vue"),
 		meta: {
 			requiresAuth: true,
-			requiresAdmin: true,
+			role: "Administrador",
 			title: "Panel de Administración",
 		},
 	},
@@ -62,66 +53,60 @@ const routes = [
 		component: () => import("../views/guest/Guest.vue"),
 		meta: {
 			requiresAuth: true,
-			requiresGuest: true,
+			role: "Huesped",
 			title: "Panel de Huésped",
 		},
 	},
+	{
+		path: "/:pathmatch(.*)*",
+		name: "NotFound",
+		component: () => import("../views/NotFoundView.vue"),
+	},
 ];
 
-export const router = createRouter({
-	history: createWebHistory(),
+const router = createRouter({
+	history: createWebHistory(import.meta.env.BASE_URL),
 	routes,
 });
 
-// Rutas que no requieren verificación
-const publicRoutes = ["/login", "/register", "/verify-email"];
+const getUserRole = async (authId: string): Promise<string | null> => {
+	try {
+		const { data, error } = await supabase
+			.from("usuarios")
+			.select("rol_usuario")
+			.eq("auth_id", authId)
+			.single();
+		return error || !data ? null : data.rol_usuario;
+	} catch (error) {
+		return null;
+	}
+};
 
-// Retornando valores de navegación - se quita el "from" porque no se usa
-router.beforeEach(async (to) => {
+export const authGuard = async (to: RouteLocationNormalized) => {
 	const {
 		data: { session },
 	} = await supabase.auth.getSession();
+	const isAuthenticated = !!session;
+	const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
 
-	// Rutas públicas que no requieren verificación
-	if (publicRoutes.includes(to.path)) {
-		return true;
-	}
-
-	// Si hay sesión, verificar roles específicos
-	if (session) {
-		// Obtener el rol del usuario
-		const { data: userData, error } = await supabase
-			.from("usuarios")
-			.select("rol_usuario")
-			.eq("auth_id", session.user.id)
-			.single();
-
-		if (error || !userData) {
-			console.error("Error al verificar rol:", error);
-			return "/";
+	if (requiresAuth) {
+		if (!isAuthenticated) {
+			return "/login";
 		}
-
-		if (to.meta.requiresAdmin && userData?.rol_usuario !== "Administrador") {
-			return "/";
-		}
-
-		if (to.meta.requiresReception && userData?.rol_usuario !== "Recepcionista") {
-			return "/";
-		}
-
-		if (to.meta.requiresGuest && userData?.rol_usuario !== "Huesped") {
-			return "/";
+		const requiredRole = to.meta.role as string | undefined;
+		if (requiredRole && session?.user?.id) {
+			const userRole = await getUserRole(session.user.id);
+			if (userRole !== requiredRole) {
+				return "/";
+			}
 		}
 	}
-
+	if ((to.path === "/login" || to.path === "/register") && isAuthenticated) {
+		return "/";
+	}
 	return true;
-});
+};
 
-// Actualizar el título de la página
-router.afterEach((to) => {
-	if (to.meta.title) {
-		document.title = to.meta.title as string;
-	}
-});
+router.beforeEach(authGuard);
 
 export default router;
