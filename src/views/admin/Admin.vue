@@ -10,23 +10,23 @@ import AdminRoom from "./AdminRoom.vue";
 import AdminInvoice from "./AdminInvoice.vue";
 import ToastMessage from "../../components/ToastMessage.vue";
 
-const router = useRouter();
 const tabs = [
-	{ id: "usuarios", name: "Usuarios" },
-	{ id: "reservas", name: "Reservas" },
-	{ id: "habitaciones", name: "Habitaciones" },
-	{ id: "facturas", name: "Facturas" },
+	{ id: "users", name: "Usuarios" },
+	{ id: "reservations", name: "Reservas" },
+	{ id: "rooms", name: "Habitaciones" },
+	{ id: "invoices", name: "Facturas" },
 ];
-const activeTab = ref(tabs[0]?.id || "dashboard");
+const activeTab = ref(tabs[0]?.id || "users");
 
+const router = useRouter();
 const handleLogout = async () => {
 	const { error } = await supabase.auth.signOut();
 	if (error) {
 		console.error("Error al cerrar sesión:", error);
 		useToast().showMessage("alert alert-danger", "Error al cerrar sesión");
-	} else {
-		router.push("/login");
+		return;
 	}
+	setTimeout(() => router.push("/login"), 1500);
 };
 
 onMounted(() => {
@@ -60,9 +60,9 @@ onMounted(() => {
 	<ToastMessage />
 
 	<main class="container py-4">
-		<AdminUser v-if="activeTab === 'usuarios'" />
-		<AdminReservation v-if="activeTab === 'reservas'" />
-		<AdminRoom v-if="activeTab === 'habitaciones'" />
-		<AdminInvoice v-if="activeTab === 'facturas'" />
+		<AdminUser v-if="activeTab === 'users'" />
+		<AdminReservation v-if="activeTab === 'reservations'" />
+		<AdminRoom v-if="activeTab === 'rooms'" />
+		<AdminInvoice v-if="activeTab === 'invoices'" />
 	</main>
 </template>

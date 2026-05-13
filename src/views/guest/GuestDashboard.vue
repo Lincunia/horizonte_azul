@@ -1,53 +1,30 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
-import type { RoomType, RoomStatus } from "../../composables/dbInformation.ts";
+import { fetchRooms } from "../../composables/roomMethods.ts";
+import type { Room } from "../../composables/roomMethods.ts";
+import { useMisc } from "../../composables/useMisc.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
 import Modal from "../../components/Modal.vue";
 import GuestBook from "./GuestBook.vue";
-
-interface Room {
-	id_habitacion: number;
-	numero: number;
-	tipo: RoomType;
-	capacidad: number;
-	piso: number;
-	vista: string | null;
-	precio_noche: number;
-	estado: RoomStatus;
-}
 
 const rooms = ref<Room[]>([]);
 const loading = ref(true);
 const showModal = ref(false);
 const selectedRoom = ref<Room | null>(null);
 
-const fetchRooms = async () => {
+const loadRooms = async () => {
 	try {
-		const { data, error } = await supabase
-			.from("habitaciones")
-			.select("*")
-			.order("numero", { ascending: true });
-
-		if (error) throw error;
-		rooms.value = data || [];
+		rooms.value = await fetchRooms();
 	} catch (error) {
 		console.error("Error fetching rooms:", error);
-		useToast().showMessage("alert alert-danger", "Error al cargar habitaciones");
+		useToast().showMessage(
+			"alert alert-danger",
+			"Error al cargar habitaciones",
+		);
 	} finally {
 		loading.value = false;
 	}
-};
-
-const getTipoIcon = (tipo: string) => {
-	const icons = {
-		Individual: "🛏️",
-		Doble: "🛏️🛏️",
-		Suite: "👑",
-		Familiar: "👨‍👩‍👧‍👦",
-	};
-	return icons[tipo as keyof typeof icons] || "🏠";
 };
 
 const bookRoom = (habitacion: Room) => {
@@ -68,7 +45,7 @@ const closeModal = () => {
 };
 
 onMounted(() => {
-	fetchRooms();
+	loadRooms();
 	useToast().hideMessage();
 });
 </script>
@@ -80,12 +57,15 @@ onMounted(() => {
 	</header>
 
 	<LoaderMessage v-if="loading" visible message="Cargando habitaciones..." />
-	<LoaderMessage v-else-if="rooms.length === 0" message="😕 No tienes reservas aún" />
+	<LoaderMessage
+		v-else-if="rooms.length === 0"
+		message="😕 No tienes reservas aún"
+	/>
 
 	<ul v-else class="row g-4">
 		<li v-for="room in rooms" :key="room.id_habitacion" class="col-12 col-md-6">
 			<div>
-				<span>{{ getTipoIcon(room.tipo) }}</span>
+				<span>{{ useMisc().getTypeIcon(room.tipo) }}</span>
 				<span>Habitación #{{ room.numero }}</span>
 			</div>
 
@@ -149,6 +129,7 @@ onMounted(() => {
 			:room-id="selectedRoom.id_habitacion"
 			:room-number="selectedRoom.numero"
 			:price-per-night="selectedRoom.precio_noche"
+			:room-capacity="selectedRoom.capacidad"
 			@reservation-complete="closeModal"
 		/>
 	</Modal>

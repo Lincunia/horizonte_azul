@@ -153,7 +153,7 @@ onMounted(() => {
 								reserva.habitaciones.tipo
 							}}</span>
 						</div>
-						<span :class="useMisc().getBookStateBadgeClass(reserva.estado)" class="badge">
+						<span :class="useMisc().getBookStatusBadgeClass(reserva.estado)" class="badge">
 							{{ reserva.estado }}
 						</span>
 					</div>

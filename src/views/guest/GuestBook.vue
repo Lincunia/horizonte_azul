@@ -2,6 +2,7 @@
 import { ref, reactive } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
+import { calculuateDaysStaying } from "../../composables/reservationMethods.ts";
 import type { PaymentMethod } from "../../composables/dbInformation.ts";
 import ToastMessage from "../../components/ToastMessage.vue";
 import { format } from "date-fns";
@@ -10,15 +11,16 @@ const props = defineProps<{
 	roomId: number;
 	roomNumber: number;
 	pricePerNight: number;
+	roomCapacity: number;
 }>();
 
 interface Reservation {
-	startDate: string;
-	endDate: string;
-	numGuests: number;
-	observations: string;
-	totalPrice: number;
-	paymentMethod: PaymentMethod;
+	fecha_inicio: string;
+	fecha_fin: string;
+	num_huespedes: number;
+	observaciones: string;
+	costo_total: number;
+	metodo_pago: PaymentMethod;
 }
 
 const emit = defineEmits<{
@@ -32,23 +34,20 @@ const subtotal = ref(0);
 const taxes = ref(0);
 
 const newReservation = reactive<Reservation>({
-	startDate: "",
-	endDate: "",
-	numGuests: 1,
-	observations: "",
-	totalPrice: 0,
-	paymentMethod: "Efectivo",
+	fecha_inicio: "",
+	fecha_fin: "",
+	num_huespedes: 1,
+	observaciones: "",
+	costo_total: 0,
+	metodo_pago: "Efectivo",
 });
 
 const calculatePrice = () => {
-	if (newReservation.startDate && newReservation.endDate) {
-		const startDate = new Date(newReservation.startDate);
-		const endDate = new Date(newReservation.endDate);
-		const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-		daysStaying.value = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+	if (newReservation.fecha_inicio && newReservation.fecha_fin) {
+		daysStaying.value = calculuateDaysStaying(newReservation.fecha_fin, newReservation.fecha_inicio);
 		subtotal.value = daysStaying.value * props.pricePerNight;
 		taxes.value = subtotal.value * TAX_RATE;
-		newReservation.totalPrice = subtotal.value + taxes.value;
+		newReservation.costo_total = subtotal.value + taxes.value;
 	}
 };
 
@@ -56,7 +55,7 @@ const checkDates = (): boolean => {
 	const currentDate = new Date();
 	const today = format(currentDate, "yyyy-MM-dd");
 
-	if (!newReservation.startDate) {
+	if (!newReservation.fecha_inicio) {
 		useToast().showMessage(
 			"alert alert-danger",
 			"Selecciona una fecha de check-in",
@@ -64,7 +63,7 @@ const checkDates = (): boolean => {
 		return false;
 	}
 
-	if (!newReservation.endDate) {
+	if (!newReservation.fecha_fin) {
 		useToast().showMessage(
 			"alert alert-danger",
 			"Selecciona una fecha de check-out",
@@ -72,7 +71,7 @@ const checkDates = (): boolean => {
 		return false;
 	}
 
-	if (newReservation.startDate < today) {
+	if (newReservation.fecha_inicio < today) {
 		useToast().showMessage(
 			"alert alert-danger",
 			"La fecha de check-in no puede ser anterior a hoy",
@@ -80,7 +79,7 @@ const checkDates = (): boolean => {
 		return false;
 	}
 
-	if (newReservation.startDate >= newReservation.endDate) {
+	if (newReservation.fecha_inicio >= newReservation.fecha_fin) {
 		useToast().showMessage(
 			"alert alert-danger",
 			"La fecha de check-out debe ser posterior a la fecha de check-in",
@@ -88,6 +87,24 @@ const checkDates = (): boolean => {
 		return false;
 	}
 
+	return true;
+};
+
+const checkNumGuests = (): boolean => {
+	if (!newReservation.num_huespedes || newReservation.num_huespedes < 1) {
+		useToast().showMessage(
+			"alert alert-danger",
+			"Ingresa un número válido de huéspedes",
+		);
+		return false;
+	}
+	if (newReservation.num_huespedes > roomCapacity) {
+		useToast().showMessage(
+			"alert alert-danger",
+			"El número de personas excede en capacidad",
+		);
+		return false;
+	}
 	return true;
 };
 
@@ -101,8 +118,8 @@ const checkAvailability = async (): Promise<boolean> => {
 
 		if (error) throw error;
 
-		const newStartDate = new Date(newReservation.startDate);
-		const newEndDate = new Date(newReservation.endDate);
+		const newStartDate = new Date(newReservation.fecha_inicio);
+		const newEndDate = new Date(newReservation.fecha_fin);
 
 		for (const reserva of data || []) {
 			const startReservation = new Date(reserva.fecha_inicio);
@@ -136,14 +153,14 @@ const insertReservation = async (userId: string) => {
 	const { data, error } = await supabase
 		.from("reservas")
 		.insert({
-			fecha_inicio: newReservation.startDate,
-			fecha_fin: newReservation.endDate,
-			num_huespedes: newReservation.numGuests,
+			fecha_inicio: newReservation.fecha_inicio,
+			fecha_fin: newReservation.fecha_fin,
+			num_huespedes: newReservation.num_huespedes,
 			estado: "Pendiente",
-			costo_total: newReservation.totalPrice,
+			costo_total: newReservation.costo_total,
 			auth_id_usuario: userId,
 			id_habitacion: props.roomId,
-			observaciones: newReservation.observations || null,
+			observaciones: newReservation.observaciones || null,
 		})
 		.select()
 		.single();
@@ -152,14 +169,14 @@ const insertReservation = async (userId: string) => {
 	return data;
 };
 
-const insertBill = async (reservationId: number) => {
+const insertInvoice = async (reservationId: number) => {
 	const { error } = await supabase
 		.from("facturas")
 		.insert({
 			subtotal: subtotal.value,
 			impuestos: taxes.value,
-			total: newReservation.totalPrice,
-			metodo_pago: newReservation.paymentMethod,
+			total: newReservation.costo_total,
+			metodo_pago: newReservation.metodo_pago,
 			estado_pago: "Pendiente",
 			id_reserva: reservationId,
 		})
@@ -170,21 +187,10 @@ const insertBill = async (reservationId: number) => {
 };
 
 const insertTablesInformation = async () => {
-	// Validar fechas
-	if (!checkDates()) {
+	if (!checkDates() && !checkNumGuests()) {
 		return;
 	}
 
-	// Validar número de huéspedes
-	if (!newReservation.numGuests || newReservation.numGuests < 1) {
-		useToast().showMessage(
-			"alert alert-danger",
-			"Ingresa un número válido de huéspedes",
-		);
-		return;
-	}
-
-	// Obtener usuario actual
 	const { data: userData, error: userError } = await supabase.auth.getUser();
 	if (userError || !userData.user) {
 		useToast().showMessage("alert alert-danger", "Usuario no autenticado");
@@ -194,7 +200,6 @@ const insertTablesInformation = async () => {
 	loading.value = true;
 
 	try {
-		// Verificar disponibilidad
 		const available = await checkAvailability();
 		if (!available) {
 			return;
@@ -202,9 +207,7 @@ const insertTablesInformation = async () => {
 
 		// Insertar reserva
 		const reservationData = await insertReservation(userData.user.id);
-
-		// Insertar factura
-		await insertBill(reservationData.id_reserva);
+		await insertInvoice(reservationData.id_reserva);
 
 		useToast().showMessage(
 			"alert alert-success",
@@ -244,7 +247,7 @@ const getMinDate = () => {
 			<label class="form-label">Fecha de Check-in</label>
 			<input
 				type="date"
-				v-model="newReservation.startDate"
+				v-model="newReservation.fecha_inicio"
 				@change="calculatePrice"
 				:min="getMinDate()"
 				class="form-control"
@@ -256,9 +259,9 @@ const getMinDate = () => {
 			<label class="form-label">Fecha de Check-out</label>
 			<input
 				type="date"
-				v-model="newReservation.endDate"
+				v-model="newReservation.fecha_fin"
 				@change="calculatePrice"
-				:min="newReservation.startDate || getMinDate()"
+				:min="newReservation.fecha_inicio || getMinDate()"
 				class="form-control"
 				required
 			/>
@@ -268,7 +271,7 @@ const getMinDate = () => {
 			<label class="form-label">Número de Huéspedes</label>
 			<input
 				type="number"
-				v-model="newReservation.numGuests"
+				v-model="newReservation.num_huespedes"
 				min="1"
 				max="10"
 				class="form-control"
@@ -278,11 +281,7 @@ const getMinDate = () => {
 
 		<div class="mb-3">
 			<label class="form-label">Método de pago</label>
-			<select
-				v-model="newReservation.paymentMethod"
-				class="form-select"
-				required
-			>
+			<select v-model="newReservation.metodo_pago" class="form-select" required>
 				<option>Efectivo</option>
 				<option>Tarjeta crédito</option>
 				<option>Tarjeta débito</option>
@@ -294,24 +293,40 @@ const getMinDate = () => {
 		<div class="mb-3">
 			<label class="form-label">Observaciones (opcional)</label>
 			<textarea
-				v-model="newReservation.observations"
+				v-model="newReservation.observaciones"
 				class="form-control"
 				placeholder="Requerimientos especiales..."
 			></textarea>
 		</div>
 
-		<div v-if="newReservation.totalPrice > 0">
+		<div v-if="newReservation.costo_total > 0">
 			<h3>Resumen de la reserva</h3>
 			<ul class="list-group">
 				<li class="list-group-item">Habitación #{{ props.roomNumber }}</li>
-				<li class="list-group-item"> Días de estadía: {{ daysStaying }} noches </li>
-				<li class="list-group-item"> Check-in: {{ newReservation.startDate }} </li>
-				<li class="list-group-item">Check-out: {{ newReservation.endDate }}</li>
-				<li class="list-group-item"> Huéspedes: {{ newReservation.numGuests }} </li>
-				<li class="list-group-item"> Método de pago: {{ newReservation.paymentMethod }} </li>
-				<li class="list-group-item bg-info"> Subtotal: ${{ subtotal.toFixed(2) }} </li>
-				<li class="list-group-item bg-info"> Impuestos (19%): ${{ taxes.toFixed(2) }} </li>
-				<li class="list-group-item bg-warning"> Total: ${{ newReservation.totalPrice.toFixed(2) }} </li>
+				<li class="list-group-item">
+					Días de estadía: {{ daysStaying }} noches
+				</li>
+				<li class="list-group-item">
+					Check-in: {{ newReservation.fecha_inicio }}
+				</li>
+				<li class="list-group-item">
+					Check-out: {{ newReservation.fecha_fin }}
+				</li>
+				<li class="list-group-item">
+					Huéspedes: {{ newReservation.num_huespedes }}
+				</li>
+				<li class="list-group-item">
+					Método de pago: {{ newReservation.metodo_pago }}
+				</li>
+				<li class="list-group-item bg-info">
+					Subtotal: ${{ subtotal.toFixed(2) }}
+				</li>
+				<li class="list-group-item bg-info">
+					Impuestos (19%): ${{ taxes.toFixed(2) }}
+				</li>
+				<li class="list-group-item bg-warning">
+					Total: ${{ newReservation.costo_total.toFixed(2) }}
+				</li>
 			</ul>
 		</div>
 

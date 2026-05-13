@@ -24,14 +24,20 @@ cd horizonte_azul
 ```
 Una vez clonado y accedido, se instalan las siguientes dependencias descritas
 en `package.json` de este modo:
-```
+```sh
 npm ci
 ```
 Esto sólo funciona si se encuentra presente también `package-lock.json`, en caso
 de que sólo se encuentre `package.json`, se debe usar:
-```
+```sh
 npm i
 ```
+
+### Tests
+
+Usando vitest, se tienen las características configuradas en
+[el archivo de configuración](./vitest.config.ts), si la configuración es la
+idónea, se debe correr finalmente `npm run test`.
 
 ### Logo:
 

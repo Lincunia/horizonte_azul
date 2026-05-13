@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { usePDF } from "../../composables/usePDF.ts";
+import {
+	calculuateDaysStaying,
+	calculateUnitValue,
+} from "../../composables/reservationMethods.ts";
 
 interface Factura {
 	id_factura: number;
@@ -113,10 +117,9 @@ const formatCurrency = (amount: number) => {
 					<td>Estadía en habitación #{{ reserva?.habitaciones.numero }}</td>
 					<td>
 						{{
-							Math.ceil(
-								(new Date(reserva?.fecha_fin || "").getTime() -
-									new Date(reserva?.fecha_inicio || "").getTime()) /
-									(1000 * 60 * 60 * 24),
+							calculuateDaysStaying(
+								reserva.fecha_inicio,
+								reserva.fecha_fin,
 							)
 						}}
 						noches
@@ -124,12 +127,11 @@ const formatCurrency = (amount: number) => {
 					<td>
 						{{
 							formatCurrency(
-								(factura?.subtotal || 0) /
-									Math.ceil(
-										(new Date(reserva?.fecha_fin || "").getTime() -
-											new Date(reserva?.fecha_inicio || "").getTime()) /
-											(1000 * 60 * 60 * 24),
-									),
+								calculateUnitValue(
+									factura.subtotal,
+									reserva.fecha_inicio,
+									reserva.fecha_fin,
+								),
 							)
 						}}
 					</td>

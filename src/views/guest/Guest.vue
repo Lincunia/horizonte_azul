@@ -1,24 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useToast } from "../../composables/useToast.ts";
 import { useRouter } from "vue-router";
 import { supabase } from "../../lib/supabaseClient.ts";
-import { useToast } from "../../composables/useToast.ts";
 import logo from "../../assets/logo.png";
 import ToastMessage from "../../components/ToastMessage.vue";
 import GuestDashboard from "./GuestDashboard.vue";
 import GuestReservation from "./GuestReservation.vue";
 import GuestCalendar from "./GuestCalendar.vue";
 
-const router = useRouter();
-
 const tabs = [
 	{ id: "dashboard", name: "Habitaciones" },
 	{ id: "reservations", name: "Reservas" },
 	{ id: "calendar", name: "Calendario" },
 ];
-
 const activeTab = ref(tabs[0]?.id || "dashboard");
 
+const router = useRouter();
 const handleLogout = async () => {
 	const { error } = await supabase.auth.signOut();
 	if (error) {
@@ -26,9 +24,7 @@ const handleLogout = async () => {
 		useToast().showMessage("alert alert-danger", "Error al cerrar sesión");
 		return;
 	}
-		setTimeout(() => {
-			router.push("/login");
-		}, 1500);
+	setTimeout(() => router.push("/login"), 1500);
 };
 
 onMounted(() => {
@@ -60,7 +56,6 @@ onMounted(() => {
 	</nav>
 
 	<ToastMessage />
-
 
 	<main class="container py-4">
 		<GuestDashboard v-if="activeTab === 'dashboard'" />

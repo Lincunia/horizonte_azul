@@ -36,19 +36,3 @@ export type PaymentStatus =
 	| "Pagado"
 	| "Reembolsado"
 	| "Cancelado";
-
-/* REFERENCIA PARA LAS DEMÁS TABLAS:
-export interface User {
-	user_id: number;
-	identification_type: IdentificationType;
-	identification_number: string;
-	name: string;
-	email: string;
-	phone: string | null;
-	user_role: Role;
-	registration_date: Date;
-	last_access: Date | null;
-	active: boolean;
-	auth_id: string | null; // UUID como string en TS
-}
-*/

@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import { useMisc } from "../../composables/useMisc.ts";
+import Modal from "../../components/Modal.vue";
 
 // Interfaces
 interface Habitacion {
@@ -385,258 +386,247 @@ onMounted(() => {
 </script>
 
 <template>
-	<div>
-		<!-- Controles -->
-		<div class="container">
-			<div class="mb-3">
-				<button class="btn btn-primary" @click="openCreateReservaModal">
-					➕ Crear Reserva
-				</button>
-			</div>
-			<div class="mb-3">
-				<label class="form-label">
-					Buscar por nombre, email o ID de reserva
-				</label>
-				<input type="search" v-model="searchTerm" class="form-control" />
-			</div>
-			<div class="mb-3">
-				<select v-model="filterEstado" class="form-select">
-					<option value="todos">Todos los estados</option>
-					<option value="Pendiente">Pendiente</option>
-					<option value="Confirmada">Confirmada</option>
-					<option value="Cancelada">Cancelada</option>
-				</select>
-			</div>
+	<div class="container">
+		<div class="mb-3">
+			<button class="btn btn-primary" @click="openCreateReservaModal">
+				➕ Crear Reserva
+			</button>
 		</div>
-
-		<h2>Reservas</h2>
-		<table class="table">
-			<thead class="thead-dark">
-				<tr>
-					<th scope="col">ID Reserva</th>
-					<th scope="col">Nombre Usuario</th>
-					<th scope="col">Email Usuario</th>
-					<th scope="col">Número Habitación</th>
-					<th scope="col">Huéspedes</th>
-					<th scope="col">Fecha Reserva</th>
-					<th scope="col">Fecha Inicio</th>
-					<th scope="col">Fecha Fin</th>
-					<th scope="col">Estado</th>
-					<th scope="col">Costo Total</th>
-					<th scope="col">Acciones</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr v-for="reserva in filteredReservas" :key="reserva.id_reserva">
-					<td scope="row">{{ reserva.id_reserva }}</td>
-					<td>{{ reserva.nombre_usuario }}</td>
-					<td>{{ reserva.email_usuario }}</td>
-					<td>{{ reserva.numero_habitacion }}</td>
-					<td>{{ reserva.num_huespedes }}</td>
-					<td>{{ formatDate(reserva.fecha_reserva) }}</td>
-					<td>{{ formatDate(reserva.fecha_inicio) }}</td>
-					<td>{{ formatDate(reserva.fecha_fin) }}</td>
-					<td>
-						<span
-							:class="useMisc().getBookStateBadgeClass(reserva.estado)"
-							class="badge"
-						>
-							{{ reserva.estado }}
-						</span>
-					</td>
-					<td>${{ reserva.costo_total }}</td>
-					<td class="d-flex justify-content-between align-items-center">
-						<button
-							class="btn btn-primary me-1"
-							@click="openEditReservaModal(reserva)"
-							title="Editar"
-						>
-							✏️
-						</button>
-						<button
-							class="btn btn-danger ms-1"
-							@click="deleteReserva(reserva)"
-							title="Eliminar"
-						>
-							🗑️
-						</button>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-
-		<!-- Modal para editar reserva -->
-		<div v-if="showEditReservaModal" @click.self="closeEditReservaModal">
-			<div>
-				<div>
-					<h2>Editar Reserva</h2>
-				</div>
-
-				<form @submit.prevent="updateReserva()">
-					<div>
-						<label>Número de Habitación *</label>
-						<select v-model="reservaForm.id_habitacion" required>
-							<option
-								v-for="hab in habitaciones"
-								:key="hab.id_habitacion"
-								:value="hab.id_habitacion"
-							>
-								{{ hab.numero }}
-							</option>
-						</select>
-					</div>
-
-					<div>
-						<label>Número de huéspedes *</label>
-						<input
-							type="number"
-							min="1"
-							v-model.number="reservaForm.num_huespedes"
-							required
-						/>
-					</div>
-
-					<div>
-						<div>
-							<label>Fecha Inicio *</label>
-							<input type="date" v-model="reservaForm.fecha_inicio" required />
-						</div>
-
-						<div>
-							<label>Fecha Fin *</label>
-							<input type="date" v-model="reservaForm.fecha_fin" required />
-						</div>
-					</div>
-
-					<div>
-						<label>Estado *</label>
-						<select v-model="reservaForm.estado" required>
-							<option>Pendiente</option>
-							<option>Confirmada</option>
-							<option>Cancelada</option>
-						</select>
-					</div>
-
-					<div>
-						<label>Observaciones</label>
-						<textarea v-model="reservaForm.observaciones"></textarea>
-					</div>
-
-					<div>
-						<button class="btn btn-" type="submit">Actualizar</button>
-						<button
-							type="button"
-							class="btn btn-critical"
-							@click="closeEditReservaModal"
-						>
-							Cancelar
-						</button>
-					</div>
-				</form>
-			</div>
+		<div class="mb-3">
+			<label class="form-label">
+				Buscar por nombre, email o ID de reserva
+			</label>
+			<input type="search" v-model="searchTerm" class="form-control" />
 		</div>
-
-		<!-- Modal para crear reserva -->
-		<div v-if="showCreateReservaModal" @click.self="closeCreateReservaModal">
-			<div>
-				<div>
-					<h2>Crear Reserva</h2>
-				</div>
-
-				<form @submit.prevent="createReserva()">
-					<div>
-						<label>Usuario *</label>
-						<select v-model="reservaCreateForm.auth_id_usuario" required>
-							<option value="" disabled>Selecciona un usuario</option>
-							<option
-								v-for="user in users"
-								:key="user.auth_id"
-								:value="user.auth_id"
-							>
-								{{ user.nombre }} - {{ user.email }}
-							</option>
-						</select>
-					</div>
-
-					<div>
-						<label>Número de Habitación *</label>
-						<select v-model="reservaCreateForm.id_habitacion" required>
-							<option value="" disabled>Selecciona una habitación</option>
-							<option
-								v-for="hab in habitaciones"
-								:key="hab.id_habitacion"
-								:value="hab.id_habitacion"
-							>
-								{{ hab.numero }}
-							</option>
-						</select>
-					</div>
-
-					<div>
-						<label>Número de huéspedes *</label>
-						<input
-							type="number"
-							min="1"
-							v-model.number="reservaCreateForm.num_huespedes"
-							required
-						/>
-					</div>
-
-					<div>
-						<div>
-							<label>Fecha Inicio *</label>
-							<input
-								type="date"
-								v-model="reservaCreateForm.fecha_inicio"
-								required
-							/>
-						</div>
-
-						<div>
-							<label>Fecha Fin *</label>
-							<input
-								type="date"
-								v-model="reservaCreateForm.fecha_fin"
-								required
-							/>
-						</div>
-					</div>
-
-					<div>
-						<label>Estado *</label>
-						<select v-model="reservaCreateForm.estado" required>
-							<option>Pendiente</option>
-							<option>Confirmada</option>
-							<option>Cancelada</option>
-						</select>
-					</div>
-
-					<div>
-						<label>Costo Total</label>
-						<input
-							type="number"
-							v-model.number="reservaCreateForm.costo_total"
-							min="0"
-						/>
-					</div>
-
-					<div>
-						<label>Observaciones</label>
-						<textarea v-model="reservaCreateForm.observaciones"></textarea>
-					</div>
-
-					<div>
-						<button class="btn btn-primary" type="submit">Crear</button>
-						<button
-							type="button"
-							class="btn btn-danger"
-							@click="closeCreateReservaModal"
-						>
-							Cancelar
-						</button>
-					</div>
-				</form>
-			</div>
+		<div class="mb-3">
+			<select v-model="filterEstado" class="form-select">
+				<option value="todos">Todos los estados</option>
+				<option value="Pendiente">Pendiente</option>
+				<option value="Confirmada">Confirmada</option>
+				<option value="Cancelada">Cancelada</option>
+			</select>
 		</div>
 	</div>
+
+	<h2>Reservas</h2>
+	<table class="table table-striped-columns">
+		<thead>
+			<tr>
+				<th scope="col">ID Reserva</th>
+				<th scope="col">Nombre Usuario</th>
+				<th scope="col">Email Usuario</th>
+				<th scope="col">Número Habitación</th>
+				<th scope="col">Huéspedes</th>
+				<th scope="col">Fecha Reserva</th>
+				<th scope="col">Fecha Inicio</th>
+				<th scope="col">Fecha Fin</th>
+				<th scope="col">Estado</th>
+				<th scope="col">Costo Total</th>
+				<th scope="col">Acciones</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr v-for="reserva in filteredReservas" :key="reserva.id_reserva">
+				<td scope="row">{{ reserva.id_reserva }}</td>
+				<td>{{ reserva.nombre_usuario }}</td>
+				<td>{{ reserva.email_usuario }}</td>
+				<td>{{ reserva.numero_habitacion }}</td>
+				<td>{{ reserva.num_huespedes }}</td>
+				<td>{{ formatDate(reserva.fecha_reserva) }}</td>
+				<td>{{ formatDate(reserva.fecha_inicio) }}</td>
+				<td>{{ formatDate(reserva.fecha_fin) }}</td>
+				<td>
+					<span
+						:class="useMisc().getBookStatusBadgeClass(reserva.estado)"
+						class="badge"
+					>
+						{{ reserva.estado }}
+					</span>
+				</td>
+				<td>${{ reserva.costo_total }}</td>
+				<td class="d-flex justify-content-between align-items-center">
+					<button
+						class="btn btn-primary me-1"
+						@click="openEditReservaModal(reserva)"
+						title="Editar"
+					>
+						✏️
+					</button>
+					<button
+						class="btn btn-danger ms-1"
+						@click="deleteReserva(reserva)"
+						title="Eliminar"
+					>
+						🗑️
+					</button>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<!-- Modal para editar reserva -->
+	<Modal
+		v-model="showEditReservaModal"
+		:title="`Editar Reserva`"
+		@close="closeEditReservaModal"
+	>
+		<form @submit.prevent="updateReserva()">
+			<div>
+				<label>Número de Habitación *</label>
+				<select v-model="reservaForm.id_habitacion" required>
+					<option
+						v-for="hab in habitaciones"
+						:key="hab.id_habitacion"
+						:value="hab.id_habitacion"
+					>
+						{{ hab.numero }}
+					</option>
+				</select>
+			</div>
+
+			<div>
+				<label>Número de huéspedes *</label>
+				<input
+					type="number"
+					min="1"
+					v-model.number="reservaForm.num_huespedes"
+					required
+				/>
+			</div>
+
+			<div>
+				<div>
+					<label>Fecha Inicio *</label>
+					<input type="date" v-model="reservaForm.fecha_inicio" required />
+				</div>
+
+				<div>
+					<label>Fecha Fin *</label>
+					<input type="date" v-model="reservaForm.fecha_fin" required />
+				</div>
+			</div>
+
+			<div>
+				<label>Estado *</label>
+				<select v-model="reservaForm.estado" required>
+					<option>Pendiente</option>
+					<option>Confirmada</option>
+					<option>Cancelada</option>
+				</select>
+			</div>
+
+			<div>
+				<label>Observaciones</label>
+				<textarea v-model="reservaForm.observaciones"></textarea>
+			</div>
+
+			<div>
+				<button class="btn btn-success m-2" type="submit">Actualizar</button>
+				<button
+					type="button"
+					class="btn btn-danger m-2"
+					@click="closeEditReservaModal"
+				>
+					Cancelar
+				</button>
+			</div>
+		</form>
+	</Modal>
+
+	<!-- Modal para crear reserva -->
+	<Modal
+		v-model="showCreateReservaModal"
+		:title="`Crear Reserva`"
+		@close="closeCreateReservaModal"
+	>
+		<form @submit.prevent="createReserva()">
+			<div>
+				<label>Usuario *</label>
+				<select v-model="reservaCreateForm.auth_id_usuario" required>
+					<option value="" disabled>Selecciona un usuario</option>
+					<option
+						v-for="user in users"
+						:key="user.auth_id"
+						:value="user.auth_id"
+					>
+						{{ user.nombre }} - {{ user.email }}
+					</option>
+				</select>
+			</div>
+
+			<div>
+				<label>Número de Habitación *</label>
+				<select v-model="reservaCreateForm.id_habitacion" required>
+					<option value="" disabled>Selecciona una habitación</option>
+					<option
+						v-for="hab in habitaciones"
+						:key="hab.id_habitacion"
+						:value="hab.id_habitacion"
+					>
+						{{ hab.numero }}
+					</option>
+				</select>
+			</div>
+
+			<div>
+				<label>Número de huéspedes *</label>
+				<input
+					type="number"
+					min="1"
+					v-model.number="reservaCreateForm.num_huespedes"
+					required
+				/>
+			</div>
+
+			<div>
+				<div>
+					<label>Fecha Inicio *</label>
+					<input
+						type="date"
+						v-model="reservaCreateForm.fecha_inicio"
+						required
+					/>
+				</div>
+
+				<div>
+					<label>Fecha Fin *</label>
+					<input type="date" v-model="reservaCreateForm.fecha_fin" required />
+				</div>
+			</div>
+
+			<div>
+				<label>Estado *</label>
+				<select v-model="reservaCreateForm.estado" required>
+					<option>Pendiente</option>
+					<option>Confirmada</option>
+					<option>Cancelada</option>
+				</select>
+			</div>
+
+			<div>
+				<label>Costo Total</label>
+				<input
+					type="number"
+					v-model.number="reservaCreateForm.costo_total"
+					min="0"
+				/>
+			</div>
+
+			<div>
+				<label>Observaciones</label>
+				<textarea v-model="reservaCreateForm.observaciones"></textarea>
+			</div>
+
+			<div>
+				<button class="btn btn-primary" type="submit">Crear</button>
+				<button
+					type="button"
+					class="btn btn-danger"
+					@click="closeCreateReservaModal"
+				>
+					Cancelar
+				</button>
+			</div>
+		</form>
+	</Modal>
 </template>
