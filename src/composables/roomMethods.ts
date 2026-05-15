@@ -40,17 +40,3 @@ export const updateRooms = async (room: Room) => {
 
 	if (error) throw error;
 };
-
-export const insertRooms = async (room: Room) => {
-	const { error } = await supabase.from("habitaciones").insert({
-		numero: room.numero,
-		tipo: room.tipo,
-		capacidad: room.capacidad,
-		piso: room.piso,
-		vista: room.vista || null,
-		precio_noche: room.precio_noche,
-		estado: room.estado,
-	});
-
-	if (error) throw error;
-};

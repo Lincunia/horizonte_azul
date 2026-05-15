@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabaseClient.ts";
 import { useToast } from "../../composables/useToast.ts";
 import { usePDF } from "../../composables/usePDF.ts";
 import type {PaymentStatus, PaymentMethod} from "../../composables/dbInformation.ts";
+
 interface Factura {
 	id_factura: number;
 	fecha_emision: string;

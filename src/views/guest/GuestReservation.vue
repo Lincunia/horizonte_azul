@@ -50,7 +50,8 @@ const fetchReservations = async () => {
 
 		const { data, error } = await supabase
 			.from("reservas")
-			.select( `
+			.select(
+				`
 				*,
 				habitaciones (
 					numero,
@@ -133,7 +134,10 @@ onMounted(() => {
 	</header>
 
 	<LoaderMessage v-if="loading" visible message="Cargando reservas..." />
-	<LoaderMessage v-else-if="reservations.length === 0" message="😕 No tienes reservas aún" />
+	<LoaderMessage
+		v-else-if="reservations.length === 0"
+		message="😕 No tienes reservas aún"
+	/>
 
 	<div v-else class="row g-4">
 		<div
@@ -153,7 +157,10 @@ onMounted(() => {
 								reserva.habitaciones.tipo
 							}}</span>
 						</div>
-						<span :class="useMisc().getBookStatusBadgeClass(reserva.estado)" class="badge">
+						<span
+							:class="useMisc().getBookStatusBadgeClass(reserva.estado)"
+							class="badge"
+						>
 							{{ reserva.estado }}
 						</span>
 					</div>
@@ -217,5 +224,8 @@ onMounted(() => {
 			:factura="selectedFactura"
 			:reserva="selectedReserva"
 		/>
+		<div v-else class="alert alert-danger">
+			No se pudo cargar la información de la factura
+		</div>
 	</Modal>
 </template>

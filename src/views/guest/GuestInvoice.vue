@@ -29,8 +29,8 @@ interface Reserva {
 }
 
 const props = defineProps<{
-	factura: Factura | null;
-	reserva: Reserva | null;
+	factura: Factura;
+	reserva: Reserva;
 }>();
 
 const emit = defineEmits<{
@@ -114,12 +114,12 @@ const formatCurrency = (amount: number) => {
 			</thead>
 			<tbody>
 				<tr>
-					<td>Estadía en habitación #{{ reserva?.habitaciones.numero }}</td>
+					<td>Estadía en habitación #{{ reserva.habitaciones.numero }}</td>
 					<td>
 						{{
 							calculuateDaysStaying(
-								reserva.fecha_inicio,
-								reserva.fecha_fin,
+								reserva.fecha_inicio ?? '',
+								reserva.fecha_fin ?? '',
 							)
 						}}
 						noches
@@ -129,8 +129,8 @@ const formatCurrency = (amount: number) => {
 							formatCurrency(
 								calculateUnitValue(
 									factura.subtotal,
-									reserva.fecha_inicio,
-									reserva.fecha_fin,
+									reserva.fecha_inicio ?? '',
+									reserva.fecha_fin ?? '',
 								),
 							)
 						}}

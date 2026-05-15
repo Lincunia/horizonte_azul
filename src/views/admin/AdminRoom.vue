@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useToast } from "../../composables/useToast.ts";
-import { fetchRooms, updateRooms, insertRooms } from "../../composables/roomMethods.ts";
+import { fetchRooms, updateRooms } from "../../composables/roomMethods.ts";
 import { useMisc } from "../../composables/useMisc.ts";
 import LoaderMessage from "../../components/LoaderMessage.vue";
 import type { Room } from "../../composables/roomMethods.ts";
@@ -95,14 +95,7 @@ const saveRoom = async () => {
 				"alert alert-success",
 				"Habitación actualizada exitosamente",
 			);
-		} else {
-			insertRooms (roomForm.value as Room);
-			useToast().showMessage(
-				"alert alert-success",
-				"Habitación creada exitosamente",
-			);
 		}
-
 		closeModal();
 		loadRooms();
 	} catch (error: any) {
@@ -122,10 +115,11 @@ onMounted(() => {
 <template>
 	<div class="container">
 		<div class="mb-3">
-			<label class="form-label"> Buscar por número, vista o tipo </label>
+			<label class="form-label"> Buscar por número</label>
 			<input type="search" v-model="searchTerm" class="form-control" />
 		</div>
 		<div class="mb-3">
+			<label class="form-label"> Filtrar por tipo </label>
 			<select v-model="filterType" class="form-select">
 				<option value="todos">Todos los tipos</option>
 				<option>Individual</option>
@@ -133,6 +127,9 @@ onMounted(() => {
 				<option>Suite</option>
 				<option>Familiar</option>
 			</select>
+		</div>
+		<div class="mb-3">
+			<label class="form-label"> Filtrar por estado </label>
 			<select v-model="filterStatus" class="form-select">
 				<option value="todos">Todos los estados</option>
 				<option>Libre</option>

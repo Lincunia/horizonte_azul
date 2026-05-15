@@ -98,7 +98,7 @@ const checkNumGuests = (): boolean => {
 		);
 		return false;
 	}
-	if (newReservation.num_huespedes > roomCapacity) {
+	if (newReservation.num_huespedes > props.roomCapacity) {
 		useToast().showMessage(
 			"alert alert-danger",
 			"El número de personas excede en capacidad",

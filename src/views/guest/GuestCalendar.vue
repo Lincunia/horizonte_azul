@@ -39,11 +39,8 @@ const fetchCalendarEvents = async () => {
 		const { data, error } = (await supabase
 			.from("reservas")
 			.select(
-				`id_reserva,
-        fecha_inicio,
-        fecha_fin,
-        estado,
-        habitacion:habitaciones!inner(numero)`,
+				"id_reserva, fecha_inicio, fecha_fin, estado, " +
+					"habitacion:habitaciones!inner(numero)",
 			)
 			.eq("auth_id_usuario", userData.user.id)
 			.in("estado", ["Confirmada", "Pendiente"])) as {

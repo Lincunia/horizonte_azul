@@ -86,10 +86,10 @@ onMounted(() => {
 							<span>Piso:</span>
 							<span>{{ room.piso }}°</span>
 						</div>
-						<div v-if="room.vista"
+						<div
+							v-if="room.vista"
 							class="col-12 d-flex justify-content-between align-items-center p-2 bg-light"
 						>
-
 							<span>Vista:</span>
 							<span>{{ room.vista }}</span>
 						</div>
