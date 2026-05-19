@@ -8,12 +8,12 @@ import ToastMessage from "../components/ToastMessage.vue";
 import logo from "../assets/logo.png";
 
 interface RegisterForm {
-	idType: IdentificationType,
+	idType: IdentificationType;
 	idNum: number;
 	name: string;
 	email: string;
 	phone: string;
-	role: Role,
+	role: Role;
 	password: string;
 	confirmPassword: string;
 }
@@ -59,9 +59,11 @@ const handleRegister = async (): Promise<void> => {
 		if (!idPattern.test(String(registerForm.value.idNum))) {
 			throw new Error("Identificación no válida");
 		}
+
 		if (!phonePattern.test(registerForm.value.phone)) {
 			throw new Error("Teléfono no válido");
 		}
+
 		if (registerForm.value.password !== registerForm.value.confirmPassword) {
 			throw new Error("Las contraseñas no coinciden");
 		}
@@ -79,11 +81,14 @@ const handleRegister = async (): Promise<void> => {
 		registerForm.value.password = "";
 		registerForm.value.confirmPassword = "";
 	} catch (error: any) {
-		console.error(error);
-		useToast().showMessage(
-			"alert alert-danger",
-			error.message ? error.message : "Un error ocurrió durante la inserción"
-		);
+		if (error instanceof Error && error.message.includes("email_exists")) {
+			useToast().showMessage(
+				"alert alert-danger",
+				"El usuario ya se encuentra registrado",
+			);
+			return;
+		}
+		useToast().showMessage("alert alert-danger", error.message);
 	} finally {
 		loading.value = false;
 	}

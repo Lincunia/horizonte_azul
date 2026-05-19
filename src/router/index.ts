@@ -29,7 +29,7 @@ const routes = [
 	},
 	{
 		path: "/reception",
-		name: "Recepcion",
+		name: "reception",
 		component: () => import("../views/reception/Reception.vue"),
 		meta: {
 			requiresAuth: true,
@@ -39,7 +39,7 @@ const routes = [
 	},
 	{
 		path: "/admin",
-		name: "Admin",
+		name: "admin",
 		component: () => import("../views/admin/Admin.vue"),
 		meta: {
 			requiresAuth: true,
@@ -49,7 +49,7 @@ const routes = [
 	},
 	{
 		path: "/guest",
-		name: "Huesped",
+		name: "guest",
 		component: () => import("../views/guest/Guest.vue"),
 		meta: {
 			requiresAuth: true,
@@ -94,6 +94,7 @@ export const authGuard = async (to: RouteLocationNormalized) => {
 			return "/login";
 		}
 		const requiredRole = to.meta.role as string | undefined;
+		
 		if (requiredRole && session?.user?.id) {
 			const userRole = await getUserRole(session.user.id);
 			if (userRole !== requiredRole) {
