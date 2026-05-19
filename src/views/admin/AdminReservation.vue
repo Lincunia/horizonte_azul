@@ -351,6 +351,13 @@ const deleteReserva = async (reserva: Reserva) => {
 		return;
 
 	try {
+		const { error: erorFactura } = await supabase
+			.from("facturas")
+			.delete()
+			.eq("id_reserva", reserva.id_reserva);
+
+		if (erorFactura) throw erorFactura;
+		
 		const { error } = await supabase
 			.from("reservas")
 			.delete()
