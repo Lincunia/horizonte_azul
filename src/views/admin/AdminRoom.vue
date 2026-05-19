@@ -176,7 +176,7 @@ onMounted(() => {
 				</td>
 				<td class="d-flex justify-content-between align-items-center">
 					<button
-						class="btn btn-primary me-1"
+						class="btn btn-primary"
 						@click="openEditModal(room)"
 						title="Editar"
 					>

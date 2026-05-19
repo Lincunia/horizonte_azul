@@ -114,13 +114,13 @@ describe("RF-01 Registro de usuario", () => {
 
 		await wrapper.find("form").trigger("submit.prevent");
 		await flushPromises();
-		const successCall = mockShowMessage.mock.calls.find(
-			(call) => call[0] === "alert alert-success",
-		);
 
-		expect(successCall).toBeDefined();
-		expect(successCall[1]).toContain("Registro completado");
+		expect(mockShowMessage).toHaveBeenCalledWith(
+			"alert alert-success",
+			expect.stringContaining("Registro completado"),
+		);
 	});
+
 	it("Usuario existente", async () => {
 		const errorMessage = new Error("email_exists");
 		errorMessage.message = "email_exists";
@@ -139,12 +139,13 @@ describe("RF-01 Registro de usuario", () => {
 
 		await wrapper.find("form").trigger("submit.prevent");
 		await flushPromises();
-		const errorCall = mockShowMessage.mock.calls.find(
-			(call) => call[0] === "alert alert-danger",
+
+		expect(mockShowMessage).toHaveBeenCalledWith(
+			"alert alert-danger",
+			expect.stringContaining("El usuario ya se encuentra registrado"),
 		);
-		expect(errorCall).toBeDefined();
-		expect(errorCall[1]).toBe("El usuario ya se encuentra registrado");
 	});
+
 	afterEach(() => {
 		wrapper.unmount();
 	});

@@ -91,11 +91,15 @@ const handleLogin = async (): Promise<void> => {
 			loading.value = false;
 		}, 1500);
 	} catch (error: any) {
-		console.error("Error en login:", error);
-		useToast().showMessage(
-			"alert alert-danger",
-			error.message || "Ocurrió un error durante el inicio de sesión",
-		);
+		console.error("Error en el login\n" + error?.message);
+		if (error?.message.includes("not_found")) {
+			useToast().showMessage(
+				"alert alert-danger",
+				"Error al autenticar usuario",
+			);
+			return;
+		}
+		useToast().showMessage("alert alert-danger", error.message);
 		loading.value = false;
 	}
 };

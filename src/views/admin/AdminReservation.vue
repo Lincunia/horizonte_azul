@@ -470,10 +470,14 @@ onMounted(() => {
 		:title="`Editar Reserva`"
 		@close="closeEditReservaModal"
 	>
-		<form @submit.prevent="updateReserva()">
-			<div>
-				<label>Número de Habitación *</label>
-				<select v-model="reservaForm.id_habitacion" required>
+		<form @submit.prevent="updateReserva()" class="container-sm">
+			<div class="mb-3">
+				<label class="form-label">Número de Habitación *</label>
+				<select
+					v-model="reservaForm.id_habitacion"
+					class="form-select"
+					required
+				>
 					<option
 						v-for="hab in habitaciones"
 						:key="hab.id_habitacion"
@@ -483,44 +487,51 @@ onMounted(() => {
 					</option>
 				</select>
 			</div>
-
-			<div>
-				<label>Número de huéspedes *</label>
+			<div class="mb-3">
+				<label class="form-label">Número de huéspedes *</label>
 				<input
 					type="number"
 					min="1"
+					class="form-control"
 					v-model.number="reservaForm.num_huespedes"
 					required
 				/>
 			</div>
-
-			<div>
-				<div>
-					<label>Fecha Inicio *</label>
-					<input type="date" v-model="reservaForm.fecha_inicio" required />
-				</div>
-
-				<div>
-					<label>Fecha Fin *</label>
-					<input type="date" v-model="reservaForm.fecha_fin" required />
-				</div>
+			<div class="mb-3">
+				<label class="form-label">Fecha Inicio *</label>
+				<input
+					type="date"
+					v-model="reservaForm.fecha_inicio"
+					class="form-control"
+					required
+				/>
 			</div>
 
-			<div>
-				<label>Estado *</label>
-				<select v-model="reservaForm.estado" required>
+			<div class="mb-3">
+				<label class="form-label">Fecha Fin *</label>
+				<input
+					type="date"
+					v-model="reservaForm.fecha_fin"
+					class="form-control"
+					required
+				/>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Estado *</label>
+				<select v-model="reservaForm.estado" class="form-select" required>
 					<option>Pendiente</option>
 					<option>Confirmada</option>
 					<option>Cancelada</option>
 				</select>
 			</div>
-
-			<div>
-				<label>Observaciones</label>
-				<textarea v-model="reservaForm.observaciones"></textarea>
+			<div class="mb-3">
+				<label class="form-label">Observaciones</label>
+				<textarea
+					v-model="reservaForm.observaciones"
+					class="form-control"
+				></textarea>
 			</div>
-
-			<div>
+			<div class="d-flex justify-content-center">
 				<button class="btn btn-success m-2" type="submit">Actualizar</button>
 				<button
 					type="button"
@@ -539,10 +550,14 @@ onMounted(() => {
 		:title="`Crear Reserva`"
 		@close="closeCreateReservaModal"
 	>
-		<form @submit.prevent="createReserva()">
-			<div>
-				<label>Usuario *</label>
-				<select v-model="reservaCreateForm.auth_id_usuario" required>
+		<form @submit.prevent="createReserva()" class="container-sm">
+			<div class="mb-3">
+				<label class="form-label">Usuario *</label>
+				<select
+					v-model="reservaCreateForm.auth_id_usuario"
+					class="form-select"
+					required
+				>
 					<option value="" disabled>Selecciona un usuario</option>
 					<option
 						v-for="user in users"
@@ -553,10 +568,13 @@ onMounted(() => {
 					</option>
 				</select>
 			</div>
-
-			<div>
-				<label>Número de Habitación *</label>
-				<select v-model="reservaCreateForm.id_habitacion" required>
+			<div class="mb-3">
+				<label class="form-label">Número de Habitación *</label>
+				<select
+					v-model="reservaCreateForm.id_habitacion"
+					class="form-select"
+					required
+				>
 					<option value="" disabled>Selecciona una habitación</option>
 					<option
 						v-for="hab in habitaciones"
@@ -567,61 +585,63 @@ onMounted(() => {
 					</option>
 				</select>
 			</div>
-
-			<div>
-				<label>Número de huéspedes *</label>
+			<div class="mb-3">
+				<label class="form-label">Número de huéspedes *</label>
 				<input
 					type="number"
 					min="1"
 					v-model.number="reservaCreateForm.num_huespedes"
+					class="form-control"
 					required
 				/>
 			</div>
-
-			<div>
-				<div>
-					<label>Fecha Inicio *</label>
-					<input
-						type="date"
-						v-model="reservaCreateForm.fecha_inicio"
-						required
-					/>
-				</div>
-
-				<div>
-					<label>Fecha Fin *</label>
-					<input type="date" v-model="reservaCreateForm.fecha_fin" required />
-				</div>
+			<div class="mb-3">
+				<label class="form-label">Fecha Inicio *</label>
+				<input
+					type="date"
+					v-model="reservaCreateForm.fecha_inicio"
+					class="form-control"
+					required
+				/>
 			</div>
-
-			<div>
-				<label>Estado *</label>
-				<select v-model="reservaCreateForm.estado" required>
+			<div class="mb-3">
+				<label class="form-label">Fecha Fin *</label>
+				<input
+					type="date"
+					v-model="reservaCreateForm.fecha_fin"
+					class="form-control"
+					required
+				/>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Estado *</label>
+				<select v-model="reservaCreateForm.estado" class="form-select" required>
 					<option>Pendiente</option>
 					<option>Confirmada</option>
 					<option>Cancelada</option>
 				</select>
 			</div>
-
-			<div>
-				<label>Costo Total</label>
+			<div class="mb-3">
+				<label class="form-label">Costo Total</label>
 				<input
 					type="number"
 					v-model.number="reservaCreateForm.costo_total"
+					class="form-control"
 					min="0"
 				/>
 			</div>
-
-			<div>
-				<label>Observaciones</label>
-				<textarea v-model="reservaCreateForm.observaciones"></textarea>
+			<div class="mb-3">
+				<label class="form-label">Observaciones</label>
+				<textarea
+					v-model="reservaCreateForm.observaciones"
+					class="form-control"
+				></textarea>
 			</div>
-
-			<div>
-				<button class="btn btn-primary" type="submit">Crear</button>
+			<div class="d-flex justify-content-center">
+				<button class="btn btn-primary m-2" type="submit">Crear</button>
 				<button
 					type="button"
-					class="btn btn-danger"
+					class="btn btn-danger m-2"
 					@click="closeCreateReservaModal"
 				>
 					Cancelar
